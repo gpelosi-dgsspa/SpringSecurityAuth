@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title>Springboot Authentication</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    
+    <script src="/springboot-authentication/webjars/jquery/3.6.4/jquery.min.js"></script>
+	<link href="/springboot-authentication/webjars/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/springboot-authentication/webjars/bootstrap/4.6.2/js/bootstrap.min.js"></script>
+    
+	<link href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+	<script src="/springboot-authentication/js/authentication-application.js"></script>
+
+	<link rel="icon" type="image/x-icon" href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/icons/shield-lock.svg">
+</head>
+<body>
+    <div style="margin-left: 20px; margin-right: 20px;">
+		<div id="headerDiv" class="card card-header" style="padding-top: 0px; padding-bottom: 0px;">
+			<div class='form-row' style='padding: 0px;'>
+				<div id="currentUserDiv" class="col-md-11" style='padding: 0px; margin: 0px;'>&nbsp;</div>
+				<a id="logoutDiv" class="card-body form-group col-md-1 bi bi-person-add text-dark" th:href="@{/register}" style='text-align: right; padding: 0px; margin: 0px; cursor: pointer; text-decoration: none;'>
+					<div class='d-inline' style='font-size: small; font-weight: bold;'>Registrati</div>
+				</a>
+			</div>
+		</div>
+
+		<div class="card card-nav-tabs">
+			<div class="card-header card-header-warning card-header-icon">
+				<h3><i class="bi bi-box-arrow-in-right"></i>&nbsp;&nbsp;Login</i></h3>
+			</div>
+
+			<div class="card-body form-group col-md-5" style="align-self: center;">
+				<div class="card-body text-center"></div>
+				
+				<form th:action="@{/login}" method="post">
+			        <div class="card card-body text-center p-0 shadow">
+						
+						<div class="card-header text-center"><h5>Credenziali di accesso</h5></div>
+						<div class="card-body text-center"></div>
+
+						<div class="form-group col-md-12">
+							<div class="input-group mb-0" style="padding-left: 5%; padding-right: 5%;">
+								<div class="input-group-prepend">
+									<div class="input-group-text" style="width: 100px;">Username</div>
+								</div>
+								<input type="text" class="form-control py-0" id="username" name="username" placeholder="">
+							</div>
+						</div>
+						
+						<div class="form-group col-md-12">
+							<div class="input-group mb-0" style="padding-left: 5%; padding-right: 5%;">
+								<div class="input-group-prepend">
+									<div class="input-group-text" style="width: 100px;">Password</div>
+								</div>
+								<input type="password" class="form-control py-0" id="password" name="password" placeholder="">
+								<input type="text" class="form-control py-0" id="view-password" style="display: none;">
+								<div class="input-group-append">
+									<span class="input-group-text">
+										<i id="switch-pass" class="bi bi-eye-fill text-secondary" onclick="showHidePassword('view-password','password','switch-pass');" style="cursor: pointer;"></i>
+									</span>
+								</div>
+							</div>
+						</div>
+						<div class="card-body text-center">
+							<input class="btn btn-primary btn-rounded btn-sm" type="submit" value="Accedi"/>
+						</div>
+					</div>
+			    </form>
+			</div>
+
+			<div class="card-body form-group col-md-5" style="align-self: center;" th:if="${param.error}">
+				<div class="card p-2 mb-2 bg-danger text-white shadow">
+			        Username o password non validi.
+			    </div>
+			</div>
+			<div class="card-body form-group col-md-5" style="align-self: center;" th:if="${param.logout}">
+			    <div class="card p-2 mb-2 bg-success text-white shadow">
+			        Disconnessione effettuata.
+			    </div>
+			</div>
+			<div class="card-body form-group col-md-5" style="align-self: center;" th:if="${param.invalidsession}">
+			    <div class="card p-2 mb-2 bg-warning text-white shadow">
+			        Sessione scaduta.
+			    </div>
+			</div>
+			
+			<!--div class="card-body" style="text-align: left;">
+				<a class="btn btn-primary btn-rounded btn-sm" th:href="@{/register}">Registrati</a>
+			</div-->
+		</div>
+		
+		<div th:replace="~{fragments/componenti :: auth-footer}"></div>
+	</div>
+</body>
+</html>

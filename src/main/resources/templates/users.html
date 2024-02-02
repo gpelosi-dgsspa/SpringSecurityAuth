@@ -1,0 +1,334 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head> 
+    <title>Springboot Authentication</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <script src="/springboot-authentication/webjars/jquery/3.6.4/jquery.min.js"></script>
+	<link href="/springboot-authentication/webjars/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/springboot-authentication/webjars/bootstrap/4.6.2/js/bootstrap.min.js"></script>
+        
+    <link href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <link href="/springboot-authentication/css/authentication-application.css" rel="stylesheet">
+    <!-- link th:href="@{/css/application.css}" rel="stylesheet" /-->
+    <script src="/springboot-authentication/js/authentication-application.js"></script>
+    <script src="/springboot-authentication/js/moment.js"></script>
+
+	<link rel="icon" type="image/x-icon" href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/icons/shield-lock.svg">
+	<script>
+	$(document).ready(function() {
+		getAllUsers();
+	});
+	
+	function mostraPermessi(username, dati) {
+		var elenco = JSON.parse(dati);
+		var rolePrefix = "ROLE_";
+		//sortByKey(elenco, "idPermesso", true);
+		var grants = "<div class='card' style='margin-left: 15px; margin-right: 15px;'>";
+		grants += "<h6 class='card-header'>Utente <b>" + username + "</b></h6>";
+		grants += "<div class='card-body'>";
+		grants += "<h6 class='card-title'><b>Ruoli</b></h6>";
+//		grants += "<p class='card-text'>Sottotitolo</p>";
+		for (let i in elenco) {
+			if(elenco[i].startsWith(rolePrefix)) {
+				grants += "<span class='badge badge-primary' style='border: solid 1px #cccccc;'>&nbsp;" + elenco[i].substring(rolePrefix.length) + "&nbsp;</span>&nbsp;&nbsp;"; //rounded-pill
+			}
+		}
+		grants += "<br><br><h6 class='card-title'><b>Permessi</b></h6>";
+		for (let i in elenco) {
+			if(!elenco[i].startsWith(rolePrefix)) {
+				grants += "<span class='badge badge-info' style='border: solid 1px #cccccc;'>&nbsp;" + elenco[i] + "&nbsp;</span>&nbsp;&nbsp;"; //rounded-pill
+			}
+		}
+		grants += "<div>";
+		var newText = "<label>" + grants + "</label>";
+		openModal('I','modalPopup',newText,true,false,false,true,null,null,null);
+	}
+	
+	function getPermessi(utente) {
+		var endpoint = baseURL + "/utente/get-all-hierarchy-authorities";
+		
+// 		var jEntity = [{faces: 20},{faces: 60}];
+		
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+//		    dataType: 'json',
+//		    contentType: "application/json",
+//		    data: JSON.stringify(jEntity),
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+		        mostraPermessi(utente, JSON.stringify(responseData));
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('I','modalPopup','Nessun permesso associato all\'utente <b>'+utente+'</b>',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+	
+	function mostraDatiUsersTable(dati) 
+	{
+		var elenco = JSON.parse(dati);
+		var oggi = getToday();
+		
+		sortByKey(elenco, "username", true);
+		var tabella = "<table class='table align-middle mb-0 bg-white table-hover'>";
+		tabella += "<thead class='bg-light'><tr><th>User</th><th>Access</th><th>Create</th><th>Lock</th><th>Enable</th><th>Expire</th><th>Edit</th><th>Delete</th><th>Reset</th></tr></thead>";
+		tabella += "<tbody>";
+		
+		for (let i in elenco) 
+		{
+			let locked = elenco[i].locked;
+			let enabled = elenco[i].enabled;
+			let expDate = elenco[i].expirationDate;
+			let accessoDisabilitato = locked || !enabled || (expDate!=null && oggi >= expDate.substring(0,10));
+			let username = elenco[i].username;
+			let id = elenco[i].id;
+
+			tabella += 	"<tr>";
+			
+			tabella += 		"<td>";
+			tabella += 			"<div class='align-items-center'>"; //d-flex
+			//tabella += 				"<img src='https://mdbootstrap.com/img/new/avatars/" + getRandomInt(1,25) + ".jpg' alt='' style='width: 30px; height: 30px' class='rounded-circle' />&nbsp";
+			tabella += 				"<div class='ms-3'>";
+			tabella += 					"<div class='input-group-text mb-0 bg-light' style='font-size: 13px;'><b>" + username + "</b></div>"; //min-width: 350px;
+			tabella += 				"</div>";
+			tabella += 			"</div>";
+			tabella += 		"</td>";
+			
+			tabella += 		"<td>";
+			if(accessoDisabilitato) {
+				tabella += 		"<div class='text-danger bi bi-dash-circle-fill' style='font-size: larger;' title='accesso non abilitato'></div>";
+			} else if(expDate!=null && oggi < expDate.substring(0,10)) {
+				tabella += 		"<div class='text-warning bi bi-check-circle-fill' style='font-size: larger;' title='accesso abilitato'></div>";
+			} 
+			else {
+				tabella += 		"<div class='text-success bi bi-check-circle-fill' style='font-size: larger;' title='accesso abilitato'></div>";
+			}
+			tabella += 		"</td>";
+
+			tabella += 		"<td>";
+			//tabella += 			"<span class='badge badge-info d-inline'>" + elenco[i].creationDate.substring(0,10) + "</span>";
+			tabella += 			"<span class='text-info d-inline'><b style='font-size: smaller;'>" + elenco[i].creationDate.substring(0,10) + "</b></span>";
+			tabella += 		"</td>";
+
+			tabella += 		"<td>";
+			if(locked) {
+				tabella += 			"<span class='text-primary bi bi-lock-fill' style='cursor: pointer; font-size: larger;' onclick='lockUser(\"unlock\", \"" + username + "\"); return false;'></span>";
+			} else {
+				tabella += 			"<span class='text-primary bi bi-unlock-fill' style='cursor: pointer; font-size: larger;' onclick='lockUser(\"lock\", \"" + username + "\"); return false;'></span>";
+			}
+			tabella += 		"</td>";
+			
+			tabella += 		"<td>";
+				
+			if(enabled) {
+				tabella += 			"<span class='text-primary bi bi-toggle-on' style='cursor: pointer; font-size: larger;' onclick='lockUser(\"disable\", \"" + username + "\"); return false;'></span>";
+			} else {
+				tabella += 			"<span class='text-primary bi bi-toggle-off' style='cursor: pointer; font-size: larger;' onclick='lockUser(\"enable\", \"" + username + "\"); return false;'></span>";
+			}
+			
+			tabella += 		"</td>";
+			
+			tabella += 		"<td>";
+			if(expDate!=null) {
+				if(oggi < expDate.substring(0,10)) {
+					//tabella += 			"<span class='badge badge-warning d-inline'>" + elenco[i].expirationDate.substring(0,10) + "</span>";
+					tabella += 			"<span class='text-warning d-inline'><b style='font-size: smaller;'>" + elenco[i].expirationDate.substring(0,10) + "</b></span>";
+				} else {
+					//tabella += 			"<span class='badge badge-danger d-inline'>" + elenco[i].expirationDate.substring(0,10) + "</span>";
+					tabella += 			"<span class='text-danger d-inline'><b style='font-size: smaller;'>" + elenco[i].expirationDate.substring(0,10) + "</b></span>";
+				}
+			} else {
+				tabella += 			"<span class='text-primary bi bi-dash-lg' style='font-size: larger;'></span>";
+				//tabella += 			"<span class='text-primary bi bi-infinity' style='font-size: larger;'></span>";
+			}
+			
+			tabella += 		"</td>";
+			
+			tabella += 		"<td>";
+			tabella +=			"<div class='text-primary' style='cursor: pointer' onclick='goDetail(\"" + id + "\");'><span class='bi bi-pencil-fill' style='font-size: larger;'></span></div>";
+			tabella += 		"</td>";
+			
+			tabella += 		"<td>";
+			tabella +=			"<div class='text-danger' style='cursor: pointer' onclick='deleteUser(\"" + id + "\",\"" + username + "\");'><span class='bi bi-trash-fill' style='font-size: larger;'></span></div>";
+			tabella += 		"</td>";
+			
+			tabella += 		"<td>";
+			tabella +=			"<div class='text-warning' style='cursor: pointer' onclick='passwordReset(\"" + username + "\");'><span class='bi bi-bootstrap-reboot' style='font-size: larger;'></span></div>";
+			tabella += 		"</td>";
+			
+			tabella += 	"</tr>";
+		}
+		
+		tabella += 	"<tr>";
+		tabella += 		"<td colspan='9'><div class='d-flex align-items-center '></div></td>";
+		tabella += 	"</tr>";
+		
+		tabella += "</tbody>";
+		tabella += "</table>"
+		
+		var newText = "<label>" + tabella + "</label>";
+		document.getElementById("tableUsersList").innerHTML = newText;
+	}
+	
+	function goDetail(id) {
+		document.getElementById("userId").value = id;
+		document.datail.submit();
+	}
+
+	function callDeleteUser(id) {
+		var endpoint = baseURL + "/utente/delete-cascade/" + id;
+		$.ajax({
+			url: endpoint,
+			type: 'DELETE',
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Utente eliminato',true,false,false,true,null,null,null);
+				getAllUsers();
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				if(jqXhr.status==423) {
+					openModal('E','modalPopup','Impossibile eliminare l\'utente: dati anagrafici associati',true,false,false,true,null,null,null);
+				} else {
+					openModal('E','modalPopup','Utente inesistente',true,false,false,true,null,null,null);
+				}
+			}
+		});
+	}
+	
+	function deleteUser(id, username) {
+		openModal('C','modalPopup','Eliminare l\'utente <b>'+username+'</b>?',true,true,false,false,function(){
+			callDeleteUser(id);
+		},null,null);
+	}
+
+	function callPwdReset(username) {
+		var endpoint = baseURL + "/utente/reset-password-by-username/" + username;
+		$.ajax({
+			url: endpoint,
+			type: 'PUT',
+			success: function(responseData, status, xhr){
+				openModal('S','modalPopup','Password resettata.<br>Nuova password: <p class=\'d-inline\' style=\'font-family:courier, courier new, serif;\'>'+responseData+'</p>',true,false,false,true,null,null,null);
+				getAllUsers();
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				openModal('E','modalPopup','Errore reset password',true,false,false,true,null,null,null);
+			}
+		});
+	}
+	
+	function passwordReset(username) {
+		openModal('C','modalPopup','Resettare la password per utente <b>'+username+'</b>?',true,true,false,false,function(){
+			callPwdReset(username);
+		},null,null);
+	}
+	
+	function lockUser(action, username) {
+		var endpoint = baseURL + "/utente/"+action+"-by-username/" + username;
+		$.ajax({
+		    url: endpoint,
+		    type: 'PUT',
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+		        getAllUsers();
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('E','modalPopup','Errore lock/unlock utente',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+	
+	function expireUser(expireDate, username) {
+		var endpoint = baseURL + "/utente/expire-by-username/" + username;
+		if(expireDate!=null && expireDate!="") {
+			endpoint += "?expire=" + expireDate;
+			var m = moment(expireDate, 'YYYY-MM-DD');
+			if(!m.isValid()) {
+				return false;
+			}
+		}
+		
+		$.ajax({
+		    url: endpoint,
+		    type: 'PUT',
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+		        getAllUsers();
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('E','modalPopup','Errore expire utente',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+	
+	function getAllUsers() {
+		var endpoint = baseURL + "/utente/get-all";
+		
+// 		var jEntity = [{faces: 20},{faces: 60}];
+		
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+//		    dataType: 'json',
+//		    contentType: "application/json",
+//		    data: JSON.stringify(jEntity),
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+		        mostraDatiUsersTable(JSON.stringify(responseData));
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('E','modalPopup','Errore caricamento utenti',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+	
+    </script>
+
+	<style>
+	</style>
+    
+</head>
+<body>
+	<div style="margin-left: 20px; margin-right: 20px;">
+		<div th:replace="~{fragments/componenti :: header-user}"></div>
+
+		<div class="card card-nav-tabs">
+			<div class="card-header card-header-warning card-header-icon">
+				<h3><i class="bi bi-person-gear"></i>&nbsp;&nbsp;Gestione utenti applicativi</h3>
+			</div>
+
+			<div class="form-group col-md-12" style="align-self: center; margin-top: 15px; margin-bottom: 0px;">
+				<div class="card-body text-center form-group col-md-12" style="align-self: center;">
+					<div class="card card-body text-center shadow">
+						<h6 class='card card-header border-bottom-0'><b>Uenti di sistema</b></h6>
+						<div id="tableUsersList" class="tableFixHead card card-body" style="margin: 0px; padding: 0px; height: 461px;"></div>
+						<div class="card-body pb-0" style="text-align: center;">
+							<a class="btn btn-primary btn-rounded btn-sm" th:href="@{/user_detail}">Nuovo utente</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div th:replace="~{fragments/componenti :: navbar}"></div>
+		</div>
+
+		<div th:replace="~{fragments/componenti :: auth-footer}"></div>
+	</div>
+	<form name='datail' id='datail' action='/springboot-authentication/user_detail'>
+		<input type='hidden' id='userId' name='userId' value=''>
+	</form>
+
+	<!-- https://icons.getbootstrap.com/ -->
+	
+	<!-- The Modal -->
+	<div th:replace="~{fragments/componenti :: modal-window}"></div>
+	
+</body>
+</html>

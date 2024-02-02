@@ -1,0 +1,43 @@
+.tableFixHead {
+    overflow-y: auto; /* make the table scrollable if height is more than 200 px  */
+    height: 295px; /* gives an initial height of 200px to the table */
+}
+.tableFixHead thead th {
+    position: sticky; /* make the table heads sticky */
+    top: 0px; /* table head will be placed from the top of the table and sticks to it */
+}
+.tableFixHead table {
+    border-collapse: collapse; /* make the table borders collapse to each other */
+    width: 100%;
+}
+/*th,
+td {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+}*/
+.tableFixHead th {
+    background: rgb(247, 247, 247);
+}
+
+/*select[multiple]:focus option:checked {
+    background: red linear-gradient(0deg, red 0%, red 100%);
+}*/
+
+.scroll-list {
+    overflow-y: auto; /* make the table scrollable if height is more than 200 px  */
+    height: 195px;
+}
+
+/* override colore di default di bootstrap */
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+    background-color: #cfe2ff; /*bfdeff*/
+    /*border-bottom: solid 1px #002d80;*/
+}
+
+/*
+.card-header {
+    color: white !important;
+    background-color: rgb(223, 238, 255) !important;
+    border-color: rgb(19, 87, 113);
+}
+*/

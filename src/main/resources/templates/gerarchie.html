@@ -1,0 +1,394 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head> 
+    <title>Springboot Authentication</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    
+    <script src="/springboot-authentication/webjars/jquery/3.6.4/jquery.min.js"></script>
+	<link href="/springboot-authentication/webjars/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/springboot-authentication/webjars/bootstrap/4.6.2/js/bootstrap.min.js"></script>
+        
+    <link href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <link href="/springboot-authentication/css/authentication-application.css" rel="stylesheet">
+    <!-- link th:href="@{/css/application.css}" rel="stylesheet" /-->
+    <script src="/springboot-authentication/js/authentication-application.js"></script>
+    <!--<script src="/springboot-authentication/js/moment.js"></script>-->
+
+	<link rel="icon" type="image/x-icon" href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/icons/shield-lock.svg">
+	
+	<script>
+	$(document).ready(function() {
+		getAllPermessi();
+		getAllRuoli();
+		checkHierarchySource(hideWarningMessage, showWarningMessage);
+	});
+	
+	function hideWarningMessage()
+	{
+		var messageDiv = document.getElementById("warning-message");
+		messageDiv.style.display = 'none';
+	}
+	
+	function showWarningMessage()
+	{
+		var messageDiv = document.getElementById("warning-message");
+		messageDiv.style.display = 'inline-block';
+	}
+	
+	function getAllPermessi()
+	{
+		var endpoint = baseURL + "/gerarchia/find-by-authority-type/AUTH";
+		
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+				var dati = JSON.stringify(responseData);
+		        mostraPermessi(dati);
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        openModal('E','modalPopup','Errore nel recupero dei permessi',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function getAllRuoli()
+	{
+		var endpoint = baseURL + "/gerarchia/find-by-authority-type/ROLE";
+		
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+				var dati = JSON.stringify(responseData);
+		        mostraRuoli(dati);
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        openModal('E','modalPopup','Errore nel recupero dei ruoli',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function addRowPermessi()
+	{
+		let table = document.getElementById("tablePermessi");
+		let newRow = document.getElementById("nuovoPermessoRow");
+		let permessiAddButton = document.getElementById("permessi-add-button");
+
+		if(newRow==null) {
+			let row = table.insertRow(-1);
+			row.id = 'nuovoPermessoRow';
+		
+			let c1 = row.insertCell(0);
+			let c2 = row.insertCell(1);
+			let c3 = row.insertCell(2);
+			let c4 = row.insertCell(3);
+
+			c1.style = "padding-top: 0px; padding-bottom: 0px; padding-left: 8px; padding-right: 8px; vertical-align: middle;";
+			c3.style = "padding: 0px; vertical-align: middle;";
+			c4.style = "vertical-align: middle;";
+			c4.align = "center";
+		
+			c1.innerHTML = "<input type='text' id='nuovoPermessoParent' class='form-control form-control-sm py-0' placeholder=''>";
+			c2.innerHTML = "<i class='bi bi-caret-right-fill text-primary'></i>";
+			c3.innerHTML = "<input type='text' id='nuovoPermessoChild' class='form-control form-control-sm py-0' placeholder=''>";
+			c4.innerHTML = "<div class='text-primary d-inline' style='cursor: pointer;' onclick='inserisciPermesso()'><span class='bi bi-floppy2-fill'></span></div>";
+			//c4.innerHTML = "<span class='bi bi-floppy text-primary' style='cursor: pointer;' onclick='inserisciPermesso()'></span>";
+
+			permessiAddButton.className = "bi bi-dash-circle-fill";
+		} else {
+			permessiAddButton.className = "bi bi-plus-circle-fill";
+			newRow.remove();
+		}
+	}
+
+	function addRowRuoli()
+	{
+		let table = document.getElementById("tableRuoli");
+		let newRow = document.getElementById("nuovoRuoloRow");
+		let ruoliAddButton = document.getElementById("ruoli-add-button");
+
+		if(newRow==null) {
+			let row = table.insertRow(-1);
+			row.id = 'nuovoRuoloRow';
+		
+			let c1 = row.insertCell(0);
+			let c2 = row.insertCell(1);
+			let c3 = row.insertCell(2);
+			let c4 = row.insertCell(3);
+		
+			c1.style = "padding-top: 0px; padding-bottom: 0px; padding-left: 8px; padding-right: 8px; vertical-align: middle;";
+			c3.style = "padding: 0px; vertical-align: middle;";
+			c4.style = "vertical-align: middle;";
+			c4.align = "center";
+
+			c1.innerHTML = "<input type='text' id='nuovoRuoloParent' class='form-control form-control-sm py-0' placeholder=''>";
+			c2.innerHTML = "<i class='bi bi-caret-right-fill text-primary'></i>";
+			c3.innerHTML = "<input type='text' id='nuovoRuoloChild' class='form-control form-control-sm py-0' placeholder=''>";
+			c4.innerHTML = "<div class='text-primary d-inline' style='cursor: pointer;' onclick='inserisciRuolo()'><span class='bi bi-floppy2-fill'></span></div>";
+			//c4.innerHTML = "<span class='bi bi-floppy text-primary' style='cursor: pointer;' onclick='inserisciRuolo()'></span>";
+
+			ruoliAddButton.className = "bi bi-dash-circle-fill";
+		} else {
+			ruoliAddButton.className = "bi bi-plus-circle-fill";
+			newRow.remove();
+		}
+	}
+
+	function mostraPermessi(dati) 
+	{
+		var grants = "<div class='' style='text-align: left;'>";
+		grants += "<h6 class='card-header border-bottom-0'><b>Gerarchie Permessi</b><div class='text-primary d-inline' style='cursor: pointer; margin-left: 20px;' onclick='addRowPermessi()' title='nuovo permesso'><span id='permessi-add-button' class='bi bi-plus-circle-fill'></span></div></h6>";
+		grants += "<div class='card-body tableFixHead' style='padding: 0px;'>";
+		
+		grants += "<table class='table align-middle mb-0 bg-white table-hover'>";
+		grants += "<thead class='bg-light'><tr><th width='42%'>Superiore</th><th></th><th width='42%'>Inferiore</th><th class='text-center' width='10%'>Elimina</th></tr></thead>";
+		grants += "<tbody id='tablePermessi'>";
+		
+		if(dati!=undefined) {
+			var elenco = JSON.parse(dati);
+			sortByKey(elenco, "id", true);
+			
+			for (let i in elenco) {
+				var id = elenco[i].id;
+				grants += "<tr>";
+				grants += "<td class='form-control-sm' style='vertical-align: middle;'>" + elenco[i].parentAuth + "</td>";
+				grants += "<td class='form-control-sm' style='vertical-align: middle;'><i class='bi bi-caret-right-fill text-primary'></i></td>";
+				grants += "<td class='form-control-sm' style='vertical-align: middle;'>" + elenco[i].childAuth + "</td>";
+				grants += "<td align='center' style='vertical-align: middle;'><div class='text-danger' style='cursor: pointer' onclick='eliminaPermesso("+id+")'><span class='bi bi-trash-fill'></span></div></td>";
+				//grants += "<td align='center' style='vertical-align: middle;'><span class='bi bi-trash text-danger' style='cursor: pointer' onclick='eliminaPermesso("+id+")'></span></td>";
+				grants += "</tr>";
+			}
+		}
+		grants += "</tbody>";
+		grants += "</table>"
+		
+		grants += "<div>";
+		var newText = "<label>" + grants + "</label>";
+		document.getElementById("tablePermessiList").innerHTML = grants;
+	}
+
+	function mostraRuoli(dati) 
+	{
+		var grants = "<div class='' style='text-align: left;'>";
+		grants += "<h6 class='card-header border-bottom-0'><b>Gerarchie Ruoli</b><div class='text-primary d-inline' style='cursor: pointer; margin-left: 20px;' onclick='addRowRuoli()' title='nuovo ruolo'><span id='ruoli-add-button' class='bi bi-plus-circle-fill'></span></div></h6>";
+		grants += "<div class='card-body tableFixHead' style='padding: 0px;'>";
+		
+		grants += "<table class='table align-middle mb-0 bg-white table-hover'>";
+		grants += "<thead class='bg-light'><tr><th width='42%'>Superiore</th><th></th><th width='42%'>Inferiore</th><th class='text-center' width='10%'>Elimina</th></tr></thead>";
+		grants += "<tbody id='tableRuoli'>";
+			
+		if(dati!=undefined) {
+			var elenco = JSON.parse(dati);
+			sortByKey(elenco, "id", true);
+			
+			for (let i in elenco) {
+				var id = elenco[i].id;
+				grants += "<tr>";
+				grants += "<td class='form-control-sm' style='vertical-align: middle;'>" + elenco[i].parentAuth + "</td>";
+				grants += "<td class='form-control-sm' style='vertical-align: middle;'><i class='bi bi-caret-right-fill text-primary'></i></td>";
+				grants += "<td class='form-control-sm' style='vertical-align: middle;'>" + elenco[i].childAuth + "</td>";
+				grants += "<td align='center' style='vertical-align: middle;'><div class='text-danger d-inline' style='cursor: pointer' onclick='eliminaRuolo("+id+")'><span class='bi bi-trash-fill'></span></div></td>";
+				//grants += "<td align='center' style='vertical-align: middle;'><span class='bi bi-trash text-danger' style='cursor: pointer' onclick='eliminaRuolo("+id+")'></span></td>";
+				grants += "</tr>";
+			}
+		}
+		grants += "</tbody>";
+		grants += "</table>"
+		
+		grants += "</div></div>";
+		var newText = "<label>" + grants + "</label>";
+		document.getElementById("tableRuoliList").innerHTML = grants;
+	}
+
+	function inserisciPermesso()
+	{
+		var endpoint = baseURL + "/gerarchia/insert";
+		var nuovoParent = document.getElementById('nuovoPermessoParent').value;
+		var nuovoChild = document.getElementById('nuovoPermessoChild').value;
+
+		if(nuovoParent.trim()=='' || nuovoChild.trim()=='') {
+			openModal('W','modalPopup','Entrambi i campi sono obbligatori',true,false,false,true,null,null,null);
+		} else {
+			var jEntity = {
+					parentAuth: nuovoParent,
+					childAuth: nuovoChild,
+					authorityType: "AUTH"
+	 			};
+		
+			$.ajax({
+				url: endpoint,
+				type: 'POST',
+				dataType: 'json',
+				contentType: "application/json",
+				data: JSON.stringify(jEntity),
+				success: function(responseData, status, xhr){
+					//console.log(responseData);
+					openModal('S','modalPopup','Gerarchia permesso inserita',true,false,false,true,null,null,null);
+					getAllPermessi();
+				},
+				error: function (jqXhr, textStatus, errorMessage) {
+					//console.log(errorMessage);
+					if(jqXhr.status=="406") {
+						openModal('E','modalPopup','Permesso esistente',true,false,false,true,null,null,null);
+					} else {
+						openModal('E','modalPopup','Errore inserimento permesso',true,false,false,true,null,null,null);
+					}
+				}
+			});
+		}
+	}
+
+	function inserisciRuolo()
+	{
+		var endpoint = baseURL + "/gerarchia/insert";
+		var nuovoParent = document.getElementById('nuovoRuoloParent').value;
+		var nuovoChild = document.getElementById('nuovoRuoloChild').value;
+
+		if(nuovoParent.trim()=='' || nuovoChild.trim()=='') {
+			openModal('W','modalPopup','Entrambi i campi sono obbligatori',true,false,false,true,null,null,null);
+		} else {
+			var jEntity = {
+					parentAuth: nuovoParent,
+					childAuth: nuovoChild,
+					authorityType: "ROLE"
+	 			};
+		
+			$.ajax({
+				url: endpoint,
+				type: 'POST',
+				dataType: 'json',
+				contentType: "application/json",
+				data: JSON.stringify(jEntity),
+				success: function(responseData, status, xhr){
+					//console.log(responseData);
+					openModal('S','modalPopup','Gerarchia ruolo inserita',true,false,false,true,null,null,null);
+					getAllRuoli();
+				},
+				error: function (jqXhr, textStatus, errorMessage) {
+					//console.log(errorMessage);
+					if(jqXhr.status=="406") {
+						openModal('E','modalPopup','Ruolo esistente',true,false,false,true,null,null,null);
+					} else {
+						openModal('E','modalPopup','Errore inserimento ruolo',true,false,false,true,null,null,null);
+					}
+				}
+			});
+		}
+	}
+
+	function eliminaPermesso(idPermesso)
+	{
+		var endpoint = baseURL + "/gerarchia/delete/" + idPermesso;
+		
+		$.ajax({
+			url: endpoint,
+			type: 'DELETE',
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Gerarchia permesso eliminata',true,false,false,true,null,null,null);
+				getAllPermessi();
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				//console.log(errorMessage);
+				if(jqXhr.status=="406") {
+					openModal('E','modalPopup','Impossibile eliminare il permesso<br>Permesso associato ad un Utente o ad un Ruolo',true,false,false,true,null,null,null);
+				} else {
+					openModal('E','modalPopup','Errore eliminazione permesso',true,false,false,true,null,null,null);
+				}
+			}
+		});
+	}
+
+	function eliminaRuolo(idRuolo)
+	{
+		var endpoint = baseURL + "/gerarchia/delete/" + idRuolo;
+		
+		$.ajax({
+			url: endpoint,
+			type: 'DELETE',
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Gerarchia ruolo eliminata',true,false,false,true,null,null,null);
+				getAllRuoli();
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				//console.log(errorMessage);
+				if(jqXhr.status=="406") {
+					openModal('E','modalPopup','Impossibile eliminare il ruolo<br>Ruolo associato ad un Utente o ad un Permesso',true,false,false,true,null,null,null);
+				} else {
+					openModal('E','modalPopup','Errore eliminazione ruolo',true,false,false,true,null,null,null);
+				}
+			}
+		});
+	}
+
+	</script>
+
+	<style>
+	</style>
+    
+</head>
+<body>
+	<div style="margin-left: 20px; margin-right: 20px;">
+		<div th:replace="~{fragments/componenti :: header-user}"></div>
+		
+		<div class="card card-nav-tabs">
+			<div class="card-header card-header-warning card-header-icon">
+				<h3><i class="bi bi-diagram-3"></i>&nbsp;&nbsp;Gestione gerarchie applicative</h3>
+			</div>
+
+			<div class="form-row">
+				<div class="card card-body text-center form-group col-md-12 ml-4 mr-4 p-0 mt-4 shadow">
+					<h6 class='card-header'><b>Gerarchie applicative</b></h6>
+					<div class="form-row">
+					
+						<div class="form-group col-md-6" style="margin-bottom: 0px;">
+							<div class="card-body text-center" style="align-self: center; padding-right: 3px;">
+								<div class="card card-body text-center" style="padding: 0px;">
+									<p id="tableRuoliList" style="margin-bottom: 1px;"></p>
+								</div>
+							</div>
+						</div>
+						<div class="form-group col-md-6" style="margin-bottom: 0px;">
+							<div class="card-body text-center" style="align-self: center; padding-left: 3px;">
+								<div class="card card-body text-center" style="padding: 0px;">
+									<p id="tablePermessiList" style="margin-bottom: 1px;"></p>
+								</div>
+							</div>
+						</div>
+						
+						<div id="warning-message" class="form-group col-md-12" style="display: none;">
+							<div class="card-body text-center" style="align-self: center; padding-top: 0px;">
+								<div class="card card-body text-center" style="padding: 0px;">
+									<p style="margin: 3px; font-size: small; font-style: italic;">
+										<i class='bi bi-exclamation-triangle-fill text-warning'></i>
+										&nbsp;&nbsp;&nbsp;
+										ATTENZIONE! Queste gerarchie applicative al momento non hanno effetto poiché è stata selezionata la modalità di acquisizione da file di properties
+										&nbsp;&nbsp;&nbsp;
+										<i class='bi bi-exclamation-triangle-fill text-warning'></i>
+									</p>
+								</div>
+							</div>
+						</div>
+					
+					</div>
+				</div>
+			</div>
+			
+			<div class="form-row">
+				
+			</div>
+			
+			<div th:replace="~{fragments/componenti :: navbar}"></div>
+		</div>
+		
+		<div th:replace="~{fragments/componenti :: auth-footer}"></div>
+	</div>
+
+	<!-- https://icons.getbootstrap.com/ -->
+	<div th:replace="~{fragments/componenti :: modal-window}"></div>
+</body>
+</html>

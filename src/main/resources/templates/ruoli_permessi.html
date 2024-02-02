@@ -1,0 +1,706 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head> 
+    <title>Springboot Authentication</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    
+    <script src="/springboot-authentication/webjars/jquery/3.6.4/jquery.min.js"></script>
+	<link href="/springboot-authentication/webjars/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/springboot-authentication/webjars/bootstrap/4.6.2/js/bootstrap.min.js"></script>
+        
+    <link href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <link href="/springboot-authentication/css/authentication-application.css" rel="stylesheet">
+    <!-- link th:href="@{/css/application.css}" rel="stylesheet" /-->
+    <script src="/springboot-authentication/js/authentication-application.js"></script>
+    <!--<script src="/springboot-authentication/js/moment.js"></script>-->
+
+	<link rel="icon" type="image/x-icon" href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/icons/shield-lock.svg">
+	<script>
+	$(document).ready(function() {
+		getAllPermessi();
+		getAllRuoli();
+		getGerarchieRuoli();
+		getGerarchiePermessi();
+		getSorgenteGerarchieApplicative();
+	});
+	
+	function getAllPermessi()
+	{
+		var endpoint = baseURL + "/permesso/get-all";
+		
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+				var dati = JSON.stringify(responseData);
+		        mostraPermessi(dati);
+				mostraCheckPermessi(dati);
+				var idRuolo = document.getElementById('selectRuoli').value;
+				if(idRuolo!=""){
+					aggiornaSelezionePermessi(idRuolo);
+				}
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        console.log(errorMessage);
+		        openModal('I','modalPopup','Errore nel recupero dei permessi',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function getAllRuoli()
+	{
+		var endpoint = baseURL + "/ruolo/get-all";
+		
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+				var dati = JSON.stringify(responseData);
+		        mostraRuoli(dati);
+				creaSelectRuoli(dati);
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('I','modalPopup','Errore nel recupero dei ruoli',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function creaSelectRuoli(dati) 
+	{
+		var ruoli = JSON.parse(dati);
+		sortByKey(ruoli, "id", true);
+    	var select = document.getElementById("selectRuoli");
+		removeOptionsSelect(select);
+
+		option = document.createElement('option');
+		option.value = "";
+		option.text = "";
+		select.add(option);
+    	for (let i in ruoli) 
+		{
+    		option = document.createElement('option');
+    		option.value = ruoli[i].id;
+    		option.text = ruoli[i].id + " - " + ruoli[i].descrizione;
+    		select.add(option);
+		}
+	}
+
+	function mostraCheckPermessi(dati) 
+    {
+    	var permessi = JSON.parse(dati);
+		sortByKey(permessi, "id", true);
+    	var divPermessi = document.getElementById("checkPermessi");
+		if(divPermessi.childNodes.length>0){
+			divPermessi.innerHTML = '';
+		}
+		
+    	for (let i in permessi) 
+		{
+    		divRow = document.createElement("div");
+			divRow.setAttribute("class", "form-row");
+			
+			divCheck = document.createElement("div");
+			divCheck.setAttribute("class", "custom-control custom-checkbox");
+			
+			inputCheck = document.createElement('input');
+			inputCheck.setAttribute("type", "checkbox");
+			inputCheck.setAttribute("class", "custom-control-input");
+			inputCheck.setAttribute("id", "P_"+permessi[i].id);
+			inputCheck.setAttribute("name", "permessi");
+			inputCheck.setAttribute("value", permessi[i].id);
+			
+			labelCheck = document.createElement('label');
+			labelCheck.setAttribute("class", "custom-control-label");
+			labelCheck.setAttribute("for", "P_"+permessi[i].id);
+			labelCheck.setAttribute("style", "vertical-align: middle;");
+			labelCheck.innerHTML = permessi[i].id + " - " + permessi[i].descrizione;
+			
+			divPermessi.appendChild(divRow);
+			divRow.appendChild(divCheck);
+			divCheck.appendChild(inputCheck);
+			divCheck.appendChild(labelCheck);
+		}
+    }
+
+	function addRowPermessi()
+	{
+		let table = document.getElementById("tablePermessi");
+		let newRow = document.getElementById("nuovoPermessoRow");
+		let permessiAddButton = document.getElementById("permessi-add-button");
+
+		if(newRow==null) {
+			let row = table.insertRow(-1);
+			row.id = 'nuovoPermessoRow';
+		
+			let c1 = row.insertCell(0);
+			let c2 = row.insertCell(1);
+			let c3 = row.insertCell(2);
+			let c4 = row.insertCell(3);
+
+			c1.style = "padding-top: 0px; padding-bottom: 0px; padding-left: 8px; padding-right: 8px; vertical-align: middle;";
+			c2.style = "padding: 0px; vertical-align: middle;";
+			c3.style = "vertical-align: middle;";
+			c3.align = "center";
+			c4.align = "center";
+		
+			c1.innerHTML = "<input type='text' id='idNuovoPermesso' class='form-control form-control-sm py-0' placeholder=''>";
+			c2.innerHTML = "<input type='text' id='descrizioneNuovoPermesso' class='form-control form-control-sm py-0' placeholder=''>";
+			c3.innerHTML = "<div class='text-primary' style='cursor: pointer;' onclick='inserisciPermesso()'><span class='bi bi-floppy2-fill'></span></div>";
+
+			permessiAddButton.className = "bi bi-dash-circle-fill";
+		} else {
+			permessiAddButton.className = "bi bi-plus-circle-fill";
+			newRow.remove();
+		}
+	}
+
+	function addRowRuoli()
+	{
+		let table = document.getElementById("tableRuoli");
+		let newRow = document.getElementById("nuovoRuoloRow");
+		let ruoliAddButton = document.getElementById("ruoli-add-button");
+
+		if(newRow==null) {
+			let row = table.insertRow(-1);
+			row.id = 'nuovoRuoloRow';
+		
+			let c1 = row.insertCell(0);
+			let c2 = row.insertCell(1);
+			let c3 = row.insertCell(2);
+			let c4 = row.insertCell(3);
+		
+			c1.style = "padding-top: 0px; padding-bottom: 0px; padding-left: 8px; padding-right: 8px; vertical-align: middle;";
+			c2.style = "padding: 0px; vertical-align: middle;";
+			c3.style = "vertical-align: middle;";
+			c3.align = "center";
+			c4.align = "center";
+
+			c1.innerHTML = "<input type='text' id='idNuovoRuolo' class='form-control form-control-sm py-0' placeholder=''>";
+			c2.innerHTML = "<input type='text' id='descrizioneNuovoRuolo' class='form-control form-control-sm py-0' placeholder=''>";
+			c3.innerHTML = "<div class='text-primary' style='cursor: pointer;' onclick='inserisciRuolo()'><span class='bi bi-floppy2-fill'></span></div>";
+
+			ruoliAddButton.className = "bi bi-dash-circle-fill";
+		} else {
+			ruoliAddButton.className = "bi bi-plus-circle-fill";
+			newRow.remove();
+		}
+	}
+
+	function mostraPermessi(dati) 
+	{
+		var elenco = JSON.parse(dati);
+		sortByKey(elenco, "id", true);
+
+		var grants = "<div class='' style='text-align: left;'>";
+		grants += "<h6 class='card-header border-bottom-0'><b>Permessi applicativi</b><div class='text-primary d-inline' style='cursor: pointer; margin-left: 20px;' onclick='addRowPermessi()' title='nuovo permesso'><span id='permessi-add-button' class='bi bi-plus-circle-fill'></span></div></h6>";
+		grants += "<div class='card-body tableFixHead' style='padding: 0px;'>";
+		
+		grants += "<table class='table align-middle mb-0 bg-white table-hover'>";
+		grants += "<thead class='bg-light'><tr><th style='width: 25%;'>Id</th><th style='width: 50%;'>Descrizione</th><th>Modifica</th><th>Elimina</th></tr></thead>";
+		grants += "<tbody id='tablePermessi'>";
+		
+		for (let i in elenco) {
+			var id = elenco[i].id;
+			var descrizione = elenco[i].descrizione;
+			grants += "<tr>";
+			grants += "<td class='form-control-sm' style='vertical-align: middle;'>" + id + "</td>";
+			grants += "<td style='padding: 0px; vertical-align: middle;'><input type='text' id='permesso"+i+"' class='form-control form-control-sm py-0' value='" + descrizione + "' placeholder=''></td>";
+			grants += "<td align='center' style='vertical-align: middle;'><div class='text-primary' style='cursor: pointer' onclick='aggiornaPermesso(\""+id+"\",\"permesso"+i+"\")'><span class='bi bi-floppy2-fill'></span></div></td>";
+			grants += "<td align='center' style='vertical-align: middle;'><div class='text-danger' style='cursor: pointer' onclick='eliminaPermesso(\""+id+"\")'><span class='bi bi-trash-fill'></span></div></td>";
+			grants += "</tr>";
+		}
+		//grants += "<tr id='nuovoPermessoRow'>";
+		//grants += "<td><input type='text' id='idNuovoPermesso' class='form-control py-0' placeholder=''></td>";
+		//grants += "<td><input type='text' id='descrizioneNuovoPermesso' class='form-control py-0' placeholder=''></td>";
+		//grants += "<td style='vertical-align: middle;'><div class='badge badge-primary d-inline' style='cursor: pointer' onclick='inserisciPermesso()'><span class='bi bi-plus-circle'></span></div></td>";
+		//grants += "<td></td>";
+		//grants += "</tr>";
+
+		grants += "</tbody>";
+		grants += "</table>"
+		
+		grants += "<div>";
+		var newText = "<label>" + grants + "</label>";
+		document.getElementById("tablePermessiList").innerHTML = grants;
+	}
+
+	function mostraRuoli(dati) 
+	{
+		var elenco = JSON.parse(dati);
+		sortByKey(elenco, "id", true);
+
+		var grants = "<div class='' style='text-align: left;'>";
+		grants += "<h6 class='card-header border-bottom-0'><b>Ruoli applicativi</b><div class='text-primary d-inline' style='cursor: pointer; margin-left: 20px;' onclick='addRowRuoli()' title='nuovo ruolo'><span id='ruoli-add-button' class='bi bi-plus-circle-fill'></span></div></h6>";
+		grants += "<div class='card-body tableFixHead' style='padding: 0px;'>";
+		
+		grants += "<table class='table align-middle mb-0 bg-white table-hover'>";
+		grants += "<thead class='bg-light'><tr><th style='width: 25%;'>Id</th><th style='width: 50%;'>Descrizione</th><th>Modifica</th><th>Elimina</th></tr></thead>";
+		grants += "<tbody id='tableRuoli'>";
+		
+		for (let i in elenco) {
+			var id = elenco[i].id;
+			var descrizione = elenco[i].descrizione;
+			grants += "<tr>";
+			grants += "<td class='form-control-sm' style='vertical-align: middle;'>" + id + "</td>";
+			grants += "<td style='padding: 0px; vertical-align: middle;'><input type='text' id='ruolo"+i+"' class='form-control form-control-sm py-0' value='" + descrizione + "' placeholder=''></td>";
+			grants += "<td align='center' style='vertical-align: middle;'><div class='text-primary' style='cursor: pointer' onclick='aggiornaRuolo(\""+id+"\",\"ruolo"+i+"\")'><span class='bi bi-floppy2-fill'></span></div></td>";
+			grants += "<td align='center' style='vertical-align: middle;'><div class='text-danger' style='cursor: pointer' onclick='eliminaRuolo(\""+id+"\")'><span class='bi bi-trash-fill'></span></div></td>";
+			grants += "</tr>";
+		}
+		//grants += "<tr id='nuovoRuoloRow'>";
+		//grants += "<td><input type='text' id='idNuovoRuolo' class='form-control py-0' placeholder=''></td>";
+		//grants += "<td><input type='text' id='descrizioneNuovoRuolo' class='form-control py-0' placeholder=''></td>";
+		//grants += "<td style='vertical-align: middle;'><div class='badge badge-primary d-inline' style='cursor: pointer' onclick='inserisciRuolo()'><span class='bi bi-plus-circle'></span></div></td>";
+		//grants += "<td></td>";
+		//grants += "</tr>";
+
+		grants += "</tbody>";
+		grants += "</table>"
+		
+		grants += "</div></div>";
+		var newText = "<label>" + grants + "</label>";
+		document.getElementById("tableRuoliList").innerHTML = grants;
+	}
+
+	function showHideNewItem(itemId)
+	{
+		var newItem = document.getElementById(itemId);
+		if(newItem.style.display == 'none') {
+			newItem.style.display = 'inline-block';
+		} else {
+			newItem.style.display = 'none';
+		}
+	}
+
+	function aggiornaPermesso(idPermesso, idTextPermesso)
+	{
+		var endpoint = baseURL + "/permesso/update";
+		var descrizionePermesso = document.getElementById(idTextPermesso).value;
+		var jEntity = {
+	 				id: idPermesso,
+	 				descrizione: descrizionePermesso
+	 			};
+		
+		$.ajax({
+			url: endpoint,
+			type: 'PUT',
+			dataType: 'json',
+			contentType: "application/json",
+			data: JSON.stringify(jEntity),
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Permesso aggiornato',true,false,false,true,null,null,null);
+				getAllPermessi();
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				//console.log(errorMessage);
+				openModal('E','modalPopup','Errore aggiornamento permesso',true,false,false,true,null,null,null);
+			}
+		});
+	}
+
+	function aggiornaRuolo(idRuolo, idTextRuolo)
+	{
+		var endpoint = baseURL + "/ruolo/update";
+		var descrizioneRuolo = document.getElementById(idTextRuolo).value;
+		var jEntity = {
+	 				id: idRuolo,
+	 				descrizione: descrizioneRuolo
+	 			};
+		
+		$.ajax({
+			url: endpoint,
+			type: 'PUT',
+			dataType: 'json',
+			contentType: "application/json",
+			data: JSON.stringify(jEntity),
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Ruolo aggiornato',true,false,false,true,null,null,null);
+				getAllRuoli();
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				//console.log(errorMessage);
+				openModal('E','modalPopup','Errore aggiornamento ruolo',true,false,false,true,null,null,null);
+			}
+		});
+	}
+
+	function inserisciPermesso()
+	{
+		var endpoint = baseURL + "/permesso/save";
+		var idPermesso = document.getElementById('idNuovoPermesso').value;
+		var descrizionePermesso = document.getElementById('descrizioneNuovoPermesso').value;
+
+		if(idPermesso.trim()=='' || descrizionePermesso.trim()=='') {
+			openModal('W','modalPopup','Entrambi i campi sono obbligatori',true,false,false,true,null,null,null);
+		} else {
+			var jEntity = {
+	 				id: idPermesso,
+	 				descrizione: descrizionePermesso
+	 			};
+		
+			$.ajax({
+				url: endpoint,
+				type: 'POST',
+				dataType: 'json',
+				contentType: "application/json",
+				data: JSON.stringify(jEntity),
+				success: function(responseData, status, xhr){
+					//console.log(responseData);
+					openModal('S','modalPopup','Permesso inserito',true,false,false,true,null,null,null);
+					getAllPermessi();
+				},
+				error: function (jqXhr, textStatus, errorMessage) {
+					//console.log(errorMessage);
+					if(jqXhr.status=="406") {
+						openModal('E','modalPopup','Permesso esistente',true,false,false,true,null,null,null);
+					} else {
+						openModal('E','modalPopup','Errore inserimento permesso',true,false,false,true,null,null,null);
+					}
+				}
+			});
+		}
+	}
+
+	function inserisciRuolo()
+	{
+		var endpoint = baseURL + "/ruolo/save";
+		var idRuolo = document.getElementById('idNuovoRuolo').value;
+		var descrizioneRuolo = document.getElementById('descrizioneNuovoRuolo').value;
+
+		if(idRuolo.trim()=='' || descrizioneRuolo.trim()=='') {
+			openModal('W','modalPopup','Entrambi i campi sono obbligatori',true,false,false,true,null,null,null);
+		} else {
+			var jEntity = {
+	 				id: idRuolo,
+	 				descrizione: descrizioneRuolo
+	 			};
+		
+			$.ajax({
+				url: endpoint,
+				type: 'POST',
+				dataType: 'json',
+				contentType: "application/json",
+				data: JSON.stringify(jEntity),
+				success: function(responseData, status, xhr){
+					//console.log(responseData);
+					openModal('S','modalPopup','Ruolo inserito',true,false,false,true,null,null,null);
+					getAllRuoli();
+				},
+				error: function (jqXhr, textStatus, errorMessage) {
+					//console.log(errorMessage);
+					if(jqXhr.status=="406") {
+						openModal('E','modalPopup','Ruolo esistente',true,false,false,true,null,null,null);
+					} else {
+						openModal('E','modalPopup','Errore inserimento ruolo',true,false,false,true,null,null,null);
+					}
+				}
+			});
+		}
+	}
+
+	function eliminaPermesso(idPermesso)
+	{
+		var endpoint = baseURL + "/permesso/delete/" + idPermesso;
+		
+		$.ajax({
+			url: endpoint,
+			type: 'DELETE',
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Permesso eliminato',true,false,false,true,null,null,null);
+				getAllPermessi();
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				//console.log(errorMessage);
+				if(jqXhr.status=="406") {
+					openModal('E','modalPopup','Impossibile eliminare il permesso<br>Permesso associato ad un Utente o ad un Ruolo',true,false,false,true,null,null,null);
+				} else {
+					openModal('E','modalPopup','Errore eliminazione permesso',true,false,false,true,null,null,null);
+				}
+			}
+		});
+	}
+
+	function eliminaRuolo(idRuolo)
+	{
+		var endpoint = baseURL + "/ruolo/delete/" + idRuolo;
+		
+		$.ajax({
+			url: endpoint,
+			type: 'DELETE',
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Ruolo eliminato',true,false,false,true,null,null,null);
+				getAllRuoli();
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				//console.log(errorMessage);
+				if(jqXhr.status=="406") {
+					openModal('E','modalPopup','Impossibile eliminare il ruolo<br>Ruolo associato ad un Utente o ad un Permesso',true,false,false,true,null,null,null);
+				} else {
+					openModal('E','modalPopup','Errore eliminazione ruolo',true,false,false,true,null,null,null);
+				}
+			}
+		});
+	}
+
+	function aggiornaSelezionePermessi(idRuolo) {
+		var endpoint = baseURL + "/ruolo-permesso/find-by-ruolo/" + idRuolo;
+		
+		resetCheckboxGroup("permessi");
+		if(idRuolo!=null && idRuolo.trim()!="") {
+			$.ajax({
+				url: endpoint,
+				type: 'GET',
+				success: function(responseData, status, xhr){
+					//console.log(responseData);
+					var permessi = JSON.parse(JSON.stringify(responseData));
+
+					$("input:checkbox[name=permessi]:checked").each(function(){
+						$(this).prop("checked", false);
+					});
+
+					for(let i in permessi) {
+						$("input:checkbox[name=permessi]").each(function(){
+							if($(this).val() == permessi[i].idPermesso) {
+								$(this).prop("checked", true);
+							}
+						});
+					}
+				},
+				error: function (jqXhr, textStatus, errorMessage) {
+					//console.log(errorMessage);
+					if(jqXhr.status!=404) { //se ritorna 404 significa che non ci sono permessi per quel ruolo, non è un errore
+						openModal('E','modalPopup','Errore aggiornamento selezione permessi',true,false,false,true,null,null,null);
+					}
+				}
+			});
+		}
+	}
+
+	function salvaAssociazioneRuoloPermessi()
+	{
+		var selRuoli = document.getElementById("selectRuoli");
+		var idRuolo = selRuoli.value;
+		if(idRuolo!="") {
+			var permessiAssociati = [];
+			var permessiSelezionati = [];
+
+			$("input:checkbox[name=permessi]:checked").each(function(){
+				permessiSelezionati.push($(this).val());
+			});
+
+			for(let i in permessiSelezionati) {
+				var jEntity = {
+					idRuolo: idRuolo,
+					idPermesso: permessiSelezionati[i]
+				};
+				permessiAssociati.push(jEntity);
+			}
+
+			var endpoint = baseURL + "/ruolo-permesso/save-multi/" + idRuolo;
+			$.ajax({
+				url: endpoint,
+				type: 'POST',
+				dataType: 'json',
+				contentType: "application/json",
+				data: JSON.stringify(permessiAssociati),
+				success: function(responseData, status, xhr){
+					//console.log(responseData);
+					openModal('S','modalPopup','Associazione salvata',true,false,false,true,null,null,null);
+				},
+				error: function (jqXhr, textStatus, errorMessage) {
+					//console.log(errorMessage);
+					openModal('E','modalPopup','Errore salvataggio associazione permessi'+jqXhr.status,true,false,false,true,null,null,null);
+				},
+				complete: function() {
+					getAllPermessi();
+				}
+			});
+
+		} else {
+			openModal('W','modalPopup','Selezionare un ruolo',true,false,false,true,null,null,null);
+		}
+	}
+
+	function getGerarchieRuoli()
+	{
+		var endpoint = baseURL + "/user-grant-web/get-roles-hierarchies";
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+				var dati = JSON.stringify(responseData);
+				var elenco = JSON.parse(dati);
+				var listaGerarchieRuoli = "";
+				var gerarchia = "";
+				for(let i in elenco){
+					gerarchia = replaceAll(elenco[i], "ROLE_", "");
+					gerarchia = "<i class='bi bi-"+(parseInt(i)+1)+"-square-fill text-primary'></i>&nbsp;&nbsp;&nbsp;&nbsp;" + replaceAll(gerarchia, ">", "&nbsp;<i class='bi bi-caret-right-fill text-primary'></i>&nbsp;");
+					listaGerarchieRuoli += gerarchia + "<br>";
+				}
+				document.getElementById("gerarchie-ruoli").innerHTML = listaGerarchieRuoli;
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        openModal('E','modalPopup','Errore nel recupero delle gerarchie dei ruoli',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function getGerarchiePermessi()
+	{
+		var endpoint = baseURL + "/user-grant-web/get-authorities-hierarchies";
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+				var dati = JSON.stringify(responseData);
+				var elenco = JSON.parse(dati);
+				var listaGerarchiePermessi = "";
+				var gerarchia = "";
+				for(let i in elenco){
+					gerarchia = "<i class='bi bi-"+(parseInt(i)+1)+"-square-fill text-primary'></i>&nbsp;&nbsp;&nbsp;&nbsp;" + replaceAll(elenco[i], ">", "&nbsp;<i class='bi bi-caret-right-fill text-primary'></i>&nbsp;");
+					listaGerarchiePermessi += gerarchia + "<br>";
+				}
+				document.getElementById("gerarchie-permessi").innerHTML = listaGerarchiePermessi;
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        openModal('E','modalPopup','Errore nel recupero delle gerarchie dei permessi',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function getSorgenteGerarchieApplicative()
+	{
+		var endpoint = baseURL + "/app/get-hierarchy-source";
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+				//var dati = JSON.stringify(responseData);
+				//var elenco = JSON.parse(dati);
+				//console.log(responseData);
+				var strSource = "file di configurazione <i class='bi bi-card-list'></i>";
+				var icon = "<i class='bi bi-card-list'></i>";
+				if(responseData=="DB"){
+					strSource = "database <i class='bi bi-database'></i>";
+				}
+				var footerHier = document.getElementById('subtitle-hierarchy');
+				footerHier.innerHTML = "[ sorgente: " + strSource + " ]";
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        openModal('E','modalPopup','Errore nel recupero delle gerarchie dei permessi',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+	
+    </script>
+
+	<style>
+	</style>
+    
+</head>
+<body>
+	<div style="margin-left: 20px; margin-right: 20px;">
+		<div th:replace="~{fragments/componenti :: header-user}"></div>
+		
+		<div class="card card-nav-tabs">
+			<div class="card-header card-header-warning card-header-icon">
+				<h3><i class="bi bi-file-ruled"></i>&nbsp;&nbsp;Gestione Ruoli e Permessi applicativi</h3>
+			</div>
+
+			<div class="form-row card-body">
+				<div class="form-group col-md-12 mb-0">
+					<div class="card card-body text-center p-0 shadow">
+						<h6 class='card-header'><b>Gerarchie applicative</b></h6>
+						<div class="form-row card-body text-center mb-2 pb-0">
+							<div class="form-group col-md-6" style="padding-left: 0px; padding-right: 6px; margin-bottom: 0px;">
+								<div class="card p-1 mb-2 bg-light"><b>Gerarchie Ruoli</b></div>
+								<div class="card p-2 mb-2 text-left d-inline-block" id="gerarchie-ruoli" style='font-size: 14px; width: 100%;'></div>
+							</div>
+							<div class="form-group col-md-6" style="padding-left: 6px; padding-right: 0px; margin-bottom: 0px;">
+								<div class="card p-1 mb-2 bg-light"><b>Gerarchie Permessi</b></div>
+								<div class="card p-2 mb-2 text-left d-inline-block" id="gerarchie-permessi" style='font-size: 14px; width: 100%;'></div>
+							</div>
+						</div>
+						<p class="card card-footer border-bottom-0 border-left-0 border-right-0 m-0 p-0 text-center"><small id="subtitle-hierarchy"></small></p>
+					</div>
+					
+				</div>
+			</div>
+			
+			<div class="card-body mb-1 mt-0 pb-1 pt-0"></div>
+			
+			<div class="form-row">
+				
+				<div class="card card-body text-center form-group col-md-12 ml-4 mr-4 p-0 shadow">
+					<h6 class='card-header'><b>Gestione Ruoli e Permessi</b></h6>
+					<div class="form-row">					
+						<div class="form-group col-md-6 mb-0">
+							<div class="card-body text-center" style="align-self: center; padding-right: 3px;">
+								<div class="card card-body text-center p-0">
+									<p id="tableRuoliList" style="margin-bottom: 1px;"></p>
+								</div>
+							</div>
+						</div>
+						<div class="form-group col-md-6 mb-0">
+							<div class="card-body text-center" style="align-self: center; padding-left: 3px;">
+								<div class="card card-body text-center p-0">
+									<p id="tablePermessiList" style="margin-bottom: 1px;"></p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="card-body mb-1 mt-0 pb-1 pt-0"></div>
+			
+			<div class="form-row">
+				
+				<div class="form-group col-md-12" style="padding-left: 25px; padding-right: 25px;">
+					<div class="card card-body text-center p-0 shadow">
+						<h6 class='card-header'><b>Associazione Ruoli-Permessi</b></h6>
+						<div class="form-row card-body text-center">
+							<div class="form-group col-md-6" style="padding-left: 0px; padding-right: 10px;">
+								<div class="card p-1 mb-2 bg-light"><b>Ruoli</b></div>
+								<select id="selectRuoli" class="browser-default custom-select" style="font-size: 14px;" onchange="aggiornaSelezionePermessi(this.value)">
+									<option value=""></option>
+								</select>
+							</div>
+							<div class="form-group col-md-6" style="padding-left: 10px;">
+								<div class="form-row">
+									<div class="form-group col-md-12 card p-1 mb-2 bg-light d-inline"><b>Permessi associati</b><i class="bi bi-x-square-fill text-primary" onclick="return resetCheckboxGroup('permessi');" style="cursor: pointer; margin-left: 20px;" title="reset permessi"></i></div>
+								</div>
+								<div class="form-row">
+									<div class="card card-body col-md-12 scroll-list" style="padding-left: 15px; padding-top: 5px; padding-bottom: 5px;" id="checkPermessi"></div>
+								</div>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<button class="btn btn-primary btn-rounded btn-sm" onclick="salvaAssociazioneRuoloPermessi();">Salva</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			</div>
+			
+			<div th:replace="~{fragments/componenti :: navbar}"></div>
+		</div>
+		
+		<div th:replace="~{fragments/componenti :: auth-footer}"></div>
+	</div>
+
+	<!-- https://icons.getbootstrap.com/ -->
+	<div th:replace="~{fragments/componenti :: modal-window}"></div>
+</body>
+</html>

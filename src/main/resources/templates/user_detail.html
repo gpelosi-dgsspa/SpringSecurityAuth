@@ -1,0 +1,831 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head> 
+    <title>Springboot Authentication</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    
+    <script src="/springboot-authentication/webjars/jquery/3.6.4/jquery.min.js"></script>
+	<link href="/springboot-authentication/webjars/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/springboot-authentication/webjars/bootstrap/4.6.2/js/bootstrap.min.js"></script>
+	<!-- link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script -->
+
+	<link href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <link href="/springboot-authentication/css/authentication-application.css" rel="stylesheet">
+    <!-- link th:href="@{/css/application.css}" rel="stylesheet" /-->
+    <script src="/springboot-authentication/js/authentication-application.js"></script>
+    <script src="/springboot-authentication/js/moment.js"></script>
+    
+	<link rel="icon" type="image/x-icon" href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/icons/shield-lock.svg">
+    <script>
+	$(document).ready(function() {
+		checkNewOrUpdate();
+		redirectOnKeyButton("Escape", "/users");
+	});
+	
+	function checkNewOrUpdate() 
+	{
+		let param = getUserId();
+		document.getElementById("userId").value = param;
+		
+		if(param!=null) {
+			recuperaUtente(param);
+		} else {
+			document.getElementById("creationDate").value = getToday();
+			document.getElementById("dati-anagrafici").style.display = "none";
+			document.getElementById("button-delete-user").style.display = "none";
+		}
+		
+		creaCheckRuoli();
+		creaCheckPermessi();
+		
+		getDatiAnagrafici();
+	}
+	
+	function getDatiAnagrafici() {
+		var idUtente = document.getElementById("userId").value;
+		if(idUtente!="") {
+			var endpoint = baseURL + "/anagrafica-utente/find-by-id-utente/" + idUtente;
+	    	$.ajax({
+			    url: endpoint,
+			    type: 'GET',
+			    success: function(responseData, status, xhr){
+					if(responseData!=null && responseData!=undefined) {
+			        	mostraDatiAnagrafici(JSON.stringify(responseData));
+			        }
+			    },
+			    error: function (jqXhr, textStatus, errorMessage) {
+			        console.log(errorMessage);
+			    }
+			});
+		}
+	}
+
+
+	function creaCheckRuoli() {
+		var endpoint = baseURL + "/ruolo/get-all";
+    	$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+				var userId = document.getElementById("userId").value;
+				if(userId!=null && userId!="")
+				{
+					var endpointRU = baseURL + "/utente-ruolo/find-by-userid/" + document.getElementById("userId").value;
+					$.ajax({
+						url: endpointRU,
+						type: 'GET',
+						success: function(responseDataRU, statusRU, xhrRU){
+							//console.log(responseDataRU);
+							mostraCheckRuoli(JSON.stringify(responseData), JSON.stringify(responseDataRU));
+						},
+						error: function (jqXhrRU, textStatusRU, errorMessageRU) {
+							//console.log(errorMessageRU);
+							mostraCheckRuoli(JSON.stringify(responseData));
+						}
+					});
+				} else {
+					mostraCheckRuoli(JSON.stringify(responseData));
+				}
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        console.log(errorMessage);
+		    }
+		});
+	}
+
+	function creaCheckPermessi() {
+		var endpoint = baseURL + "/permesso/get-all";
+    	$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+				var userId = document.getElementById("userId").value;
+				if(userId!=null && userId!="")
+				{
+					var endpointRU = baseURL + "/utente-permesso/find-by-userid/" + document.getElementById("userId").value;
+					$.ajax({
+						url: endpointRU,
+						type: 'GET',
+						success: function(responseDataPU, statusRU, xhrRU){
+							//console.log(responseDataPU);
+							mostraCheckPermessi(JSON.stringify(responseData), JSON.stringify(responseDataPU));
+						},
+						error: function (jqXhrPU, textStatusPU, errorMessagePU) {
+							//console.log(errorMessagePU);
+							mostraCheckPermessi(JSON.stringify(responseData));
+						}
+					});
+				} else {
+					mostraCheckPermessi(JSON.stringify(responseData));
+				}
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        console.log(errorMessage);
+		    }
+		});
+	}
+
+	function mostraCheckRuoli(dati, datiRU) 
+    {
+    	var ruoli = JSON.parse(dati);
+		sortByKey(ruoli, "id", true);
+    	var divRuoli = document.getElementById("checkRuoli");
+    	for (let i in ruoli) 
+		{
+    		divRow = document.createElement("div");
+			divRow.setAttribute("class", "form-row");
+			
+			divCheck = document.createElement("div");
+			divCheck.setAttribute("class", "custom-control custom-checkbox");
+			
+			inputCheck = document.createElement('input');
+			inputCheck.setAttribute("type", "checkbox");
+			inputCheck.setAttribute("class", "custom-control-input");
+			inputCheck.setAttribute("id", "R_"+ruoli[i].id);
+			inputCheck.setAttribute("name", "ruoli");
+			inputCheck.setAttribute("value", ruoli[i].id);
+			
+			if(datiRU!=null) {
+				var ruoliSel = JSON.parse(datiRU);
+				for(let x in ruoliSel) {
+					if(ruoli[i].id == ruoliSel[x].idRuolo) {
+						inputCheck.checked = true;
+					}
+				}
+			}
+			
+			labelCheck = document.createElement('label');
+			labelCheck.setAttribute("class", "custom-control-label");
+			labelCheck.setAttribute("for", "R_"+ruoli[i].id);
+			labelCheck.setAttribute("style", "vertical-align: middle;");
+			labelCheck.innerHTML = ruoli[i].id + " - " + ruoli[i].descrizione;
+			
+			divRuoli.appendChild(divRow);
+			divRow.appendChild(divCheck);
+			divCheck.appendChild(inputCheck);
+			divCheck.appendChild(labelCheck);
+		}
+    }
+
+	function mostraCheckPermessi(dati, datiPU) 
+    {
+    	var permessi = JSON.parse(dati);
+		sortByKey(permessi, "id", true);
+    	var divPermessi = document.getElementById("checkPermessi");
+    	for (let i in permessi) 
+		{
+    		divRow = document.createElement("div");
+			divRow.setAttribute("class", "form-row");
+			
+			divCheck = document.createElement("div");
+			divCheck.setAttribute("class", "custom-control custom-checkbox");
+			
+			inputCheck = document.createElement('input');
+			inputCheck.setAttribute("type", "checkbox");
+			inputCheck.setAttribute("class", "custom-control-input");
+			inputCheck.setAttribute("id", "P_"+permessi[i].id);
+			inputCheck.setAttribute("name", "permessi");
+			inputCheck.setAttribute("value", permessi[i].id);
+			
+			if(datiPU!=null) {
+				var permessiSel = JSON.parse(datiPU);
+				for(let x in permessiSel) {
+					if(permessi[i].id == permessiSel[x].idPermesso) {
+						inputCheck.checked = true;
+					}
+				}
+			}
+			
+			labelCheck = document.createElement('label');
+			labelCheck.setAttribute("class", "custom-control-label");
+			labelCheck.setAttribute("for", "P_"+permessi[i].id);
+			labelCheck.setAttribute("style", "vertical-align: middle;");
+			labelCheck.innerHTML = permessi[i].id + " - " + permessi[i].descrizione;
+			
+			divPermessi.appendChild(divRow);
+			divRow.appendChild(divCheck);
+			divCheck.appendChild(inputCheck);
+			divCheck.appendChild(labelCheck);
+		}
+    }
+
+    function recuperaUtente(utente) {
+		var endpoint = baseURL + "/utente/get/" + utente;
+		
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+		        mostraDati(JSON.stringify(responseData));
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        document.getElementById("target").innerHTML = "<div class='card p-2 mb-2 bg-danger text-white' style='width: 400px'>Utente inesistente</div>";
+		    }
+		});
+	}
+    
+    function mostraDati(dati) {
+    	var utente = JSON.parse(dati);
+    	document.getElementById("username").value = utente.username;
+    	//document.getElementById("password").value = utente.password;
+		document.getElementById("locked").checked = utente.locked;
+		document.getElementById("enabled").checked = utente.enabled;
+		document.getElementById("creationDate").value = utente.creationDate.substring(0,10);
+		if(utente.expirationDate!=null) {
+			document.getElementById("expireDate").value = utente.expirationDate.substring(0,10);
+		}
+    }
+    
+    function mostraDatiAnagrafici(dati) {
+		document.getElementById("elimina-dati-anagrafici").style.display = "inline-block";
+    	var anagrafica = JSON.parse(dati);
+    	document.getElementById("id-anagrafica").value = anagrafica.id;
+    	document.getElementById("nome").value = anagrafica.nome;
+    	document.getElementById("cognome").value = anagrafica.cognome;
+    	if(anagrafica.dataNascita!=null) {
+			document.getElementById("data-nascita").value = anagrafica.dataNascita.substring(0,10);
+		}
+		document.getElementById("codice-fiscale").value = anagrafica.codiceFiscale;
+		document.getElementById("indirizzo").value = anagrafica.indirizzo;
+		document.getElementById("email").value = anagrafica.email;
+		document.getElementById("telefono").value = anagrafica.telefono;
+    }
+    
+    function svuotaDatiAnagrafici() {
+    	document.getElementById("id-anagrafica").value = "";
+    	document.getElementById("nome").value = "";
+    	document.getElementById("cognome").value = "";
+		document.getElementById("data-nascita").value = "";
+		document.getElementById("codice-fiscale").value = "";
+		document.getElementById("indirizzo").value = "";
+		document.getElementById("email").value = "";
+		document.getElementById("telefono").value = "";
+    }
+
+	function inserisciAggiornaRuoliPermessi() {
+		var userId = document.getElementById("userId").value;
+		var endpoint = baseURL + "/user-grant-web/update-grants/" + userId;
+		
+		var listaRuoliSelezionati = [];
+		$("input:checkbox[name=ruoli]:checked").each(function(){
+			listaRuoliSelezionati.push($(this).val());
+		});
+
+		var listaPermessiSelezionati = [];
+		$("input:checkbox[name=permessi]:checked").each(function(){
+			listaPermessiSelezionati.push($(this).val());
+		});
+
+		var ruoliPermessiWeb = [];
+
+		for(let i in listaRuoliSelezionati) {
+			
+			var jEntity = {
+				idUtente: userId,
+				idRuolo: listaRuoliSelezionati[i],
+				idPermesso: null
+			};
+			ruoliPermessiWeb.push(jEntity);
+			
+		}
+
+		for(let i in listaPermessiSelezionati) {
+			var jEntity = {
+				idUtente: userId,
+				idRuolo: null,
+				idPermesso: listaPermessiSelezionati[i]
+			};
+			ruoliPermessiWeb.push(jEntity);
+		}
+
+		var esito = false;
+
+		$.ajax({
+			url: endpoint,
+			type: 'POST',
+			dataType: 'json',
+			contentType: "application/json",
+			data: JSON.stringify(ruoliPermessiWeb),
+			success: function(responseData, status, xhr){
+				console.log(responseData);
+				esito = true;
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				console.log(errorMessage);
+			}
+		});
+
+		return esito;
+	}
+
+	function saveUser() 
+    {
+		if(!checkObbligatori()){
+			openModal('W','modalPopup','Username obbligatorio',true,false,false,true,null,null,null);
+    		return false;
+    	}
+    	
+    	let username = document.getElementById("username").value;
+		if(username.includes(" ")) {
+			openModal('W','modalPopup','Il campo Username non può contenere spazi vuoti',true,false,false,true,null,null,null);
+    		return false;
+		}
+
+		let expireDate = document.getElementById("expireDate").value;
+		var m = moment(expireDate, 'YYYY-MM-DD');
+		if(expireDate.trim()!="" && !m.isValid()) {
+			openModal('W','modalPopup','Expire date errata',true,false,false,true,null,null,null);
+			return false;
+		}
+
+		let searchParams = new URLSearchParams(window.location.search);
+		let param = searchParams.get('userId');
+		if(param==null) {
+			let user_id = document.getElementById("userId").value;
+			if(user_id!=null && user_id.trim()!="") {
+				param = user_id;
+			}
+		}
+		
+		if(param!=null) {
+			var endpoint = baseURL + "/utente/update";
+	 		var jEntity = {
+	 				id: param,
+	 				username: document.getElementById("username").value,
+	 				password: document.getElementById("password").value,
+	 				locked: document.getElementById("locked").checked,
+	 				enabled: document.getElementById("enabled").checked,
+	 				creationDate: document.getElementById("creationDate").value,
+	 				expirationDate: document.getElementById("expireDate").value
+	 			};
+			$.ajax({
+			    url: endpoint,
+			    type: 'PUT',
+			    dataType: 'json',
+			    contentType: "application/json",
+			    data: JSON.stringify(jEntity),
+			    success: function(responseData, status, xhr){
+			        //console.log(responseData);
+			        mostraDati(JSON.stringify(responseData));
+					inserisciAggiornaRuoliPermessi();
+					openModal('S','modalPopup','Utente aggiornato',true,false,false,true,null,null,null);
+			    },
+			    error: function (jqXhr, textStatus, errorMessage) {
+			        console.log(errorMessage);
+					openModal('E','modalPopup','Errore aggiornamento utente',true,false,false,true,null,null,null);
+			    }
+			});
+		} else {
+			var endpoint = baseURL + "/utente/save";
+	 		var jEntity = {
+	 				username: document.getElementById("username").value,
+	 				password: document.getElementById("password").value,
+	 				locked: document.getElementById("locked").checked,
+	 				enabled: document.getElementById("enabled").checked,
+	 				creationDate: document.getElementById("creationDate").value,
+	 				expirationDate: document.getElementById("expireDate").value
+	 		};
+			$.ajax({
+			    url: endpoint,
+			    type: 'POST',
+			    dataType: 'json',
+			    contentType: "application/json",
+			    data: JSON.stringify(jEntity),
+			    success: function(responseData, status, xhr){
+			        //console.log(responseData);
+					var dati = JSON.parse(JSON.stringify(responseData));
+					document.getElementById("userId").value = dati.id;
+			        mostraDati(JSON.stringify(responseData));
+					inserisciAggiornaRuoliPermessi();
+					openModal('S','modalPopup','Utente inserito',true,false,false,true,null,null,null);
+					//svuotaForm();
+					document.getElementById("button-delete-user").style.display = "inline-block";
+					document.getElementById("dati-anagrafici").style.display = "block";
+			    },
+			    error: function (jqXhr, textStatus, errorMessage) {
+			        //console.log(errorMessage);
+					if(jqXhr.status=="406") {
+                        openModal('E','modalPopup','Utente esistente',true,false,false,true,null,null,null);
+                    } else {
+                        openModal('E','modalPopup','Errore inserimento utente',true,false,false,true,null,null,null);
+                    }
+			    }
+			});
+		}
+    }
+    
+    function saveDatiAnagrafici() {
+		var endpoint = baseURL + "/anagrafica-utente/save-or-update";
+		var idAnagrafica = document.getElementById("id-anagrafica").value;
+		if(idAnagrafica=="") {
+			idAnagrafica = null;
+		}
+		
+		var jEntity = {
+	 				id: idAnagrafica,
+				    idUtente: document.getElementById("userId").value,
+				    nome: document.getElementById("nome").value,
+				    cognome: document.getElementById("cognome").value,
+				    dataNascita: document.getElementById("data-nascita").value,
+				    codiceFiscale: document.getElementById("codice-fiscale").value,
+				    indirizzo: document.getElementById("indirizzo").value,
+				    email: document.getElementById("email").value,
+				    telefono: document.getElementById("telefono").value
+	 		};
+	 	
+	 	$.ajax({
+			    url: endpoint,
+			    type: 'POST',
+			    dataType: 'json',
+			    contentType: "application/json",
+			    data: JSON.stringify(jEntity),
+			    success: function(responseData, status, xhr){
+			        //console.log(responseData);
+					var dati = JSON.parse(JSON.stringify(responseData));
+					var idAnag = document.getElementById("id-anagrafica").value;
+					if(idAnag=="") {
+						document.getElementById("id-anagrafica").value = dati.id;
+					}
+			        mostraDatiAnagrafici(JSON.stringify(responseData));
+					openModal('S','modalPopup','Dati anagrafici aggiornati',true,false,false,true,null,null,null);
+					//svuotaForm();
+					document.getElementById("dati-anagrafici").style.display = "block";
+			    },
+			    error: function (jqXhr, textStatus, errorMessage) {
+			        //console.log(errorMessage);
+					openModal('E','modalPopup','Errore aggiornamento dati anagrafici',true,false,false,true,null,null,null);
+			    }
+			});
+	}
+
+	function svuotaForm() {
+		document.getElementById("username").value = "";
+	 	document.getElementById("password").value = "";
+	 	document.getElementById("locked").checked = false;
+	 	document.getElementById("enabled").checked  = true;
+	 	document.getElementById("creationDate").value = getToday();
+	 	document.getElementById("expireDate").value = "";
+		 resetCheckboxGroup("ruoli");
+		 resetCheckboxGroup("permessi");
+	}
+
+	function checkObbligatori() {
+    	var username = document.getElementById("username").value;
+    	if(username==null || username==""){
+    		return false
+    	}
+    	return true;
+    }
+    
+    function deleteDatiAnagrafici() {
+		openModal('C','modalPopup','Eliminare tutti i dati anagrafici utente?',true,true,false,false,function(){
+			callDeleteDatiAnagrafici();
+		},null,null);
+	}
+    
+    function callDeleteDatiAnagrafici() {
+		var endpoint = baseURL + "/anagrafica-utente/delete/" + document.getElementById("id-anagrafica").value;
+		$.ajax({
+			url: endpoint,
+			type: 'DELETE',
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Dati anagrafici eliminati',true,false,false,true,null,null,null);
+				svuotaDatiAnagrafici();
+				document.getElementById("elimina-dati-anagrafici").style.display = "none";
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				if(jqXhr.status==404){
+					openModal('I','modalPopup','Non esistono dati da eliminare',true,false,false,true,null,null,null);
+				} else {
+					openModal('E','modalPopup','Errore eliminazione dati anagrafici',true,false,false,true,null,null,null);
+				}
+			}
+		});
+	}
+	
+	function deleteUser() {
+		let id = document.getElementById("userId").value;
+		console.log(id);
+		openModal('C','modalPopup','Eliminare l\'utente?',true,true,false,false,function(){
+			callDeleteUser(id);
+		},null,null);
+	}
+	
+	function callDeleteUser(id) {
+		var endpoint = baseURL + "/utente/delete-cascade/" + id;
+		$.ajax({
+			url: endpoint,
+			type: 'DELETE',
+			success: function(responseData, status, xhr){
+				//console.log(responseData);
+				openModal('S','modalPopup','Utente eliminato',true,false,false,true,function(){
+					window.location.href = baseURL + '/users';
+				},null,null);
+			},
+			error: function (jqXhr, textStatus, errorMessage) {
+				if(jqXhr.status==423) {
+					openModal('E','modalPopup','Impossibile eliminare l\'utente: dati anagrafici associati',true,false,false,true,null,null,null);
+				} else {
+					openModal('E','modalPopup','Utente inesistente',true,false,false,true,null,null,null);
+				}
+			}
+		});
+	}
+	
+	function getUserId() {
+		let searchParams = new URLSearchParams(window.location.search);
+		let param = searchParams.get('userId');
+		return param;
+	}
+
+	</script>
+    
+</head>
+<body>
+    <div style="margin-left: 20px; margin-right: 20px;">
+		<div th:replace="~{fragments/componenti :: header-user}"></div>
+		
+		<div class="card card-nav-tabs">
+			<div class="card-header card-header-warning card-header-icon">
+				<h3><i class="bi bi-person-vcard"></i>&nbsp;&nbsp;Dettaglio utente</h3>
+			</div>
+			<div class="card-body"></div>
+
+			
+			<div class="form-row">
+				<div class="form-group col-md-12 pl-5 pr-5">
+
+					<div class="card card-body text-center p-0 shadow">
+						<div class="card-body text-center" style="padding: 0px;">
+							<h6 class='card-header'><b>Inserimento dati utente</b></h6>
+						</div>
+						<div class="card-body text-center">
+
+							<!-- Extended default form grid -->
+							
+							<!-- Grid row -->
+							<div class="form-row">
+								<!-- Default input -->
+								<div class="form-group col-md-6">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Username</div>
+									</div>
+									<input type="text" class="form-control py-0" id="username" placeholder="">
+								</div>
+								</div>
+								<!-- Default input -->
+								<div class="form-group col-md-6">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Password</div>
+									</div>
+									<input type="password" class="form-control py-0" id="password" placeholder="">
+									<input type="text" class="form-control py-0" id="view-password" style="display: none;">
+									<div class="input-group-append">
+										<span class="input-group-text">
+											<i id="switch-pass" class="bi bi-eye-fill text-secondary" onclick="showHidePassword('view-password','password','switch-pass');" style="cursor: pointer;"></i>
+										</span>
+									</div>
+								</div>
+								</div>
+							</div>
+							<!-- Grid row -->
+							
+							<!-- Grid row -->
+							<div class="form-row">
+								<!-- Default input -->
+								<div class="form-group col-md-2">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="custom-control custom-checkbox">
+										<input type="checkbox" class="custom-control-input" id="locked">
+										<label class="custom-control-label" for="locked" style="vertical-align: middle;">Locked</label>
+									</div>
+									</div>
+								</div>
+								</div>
+								<!-- Default input -->
+								<div class="form-group col-md-2">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="custom-control custom-checkbox">
+										<input type="checkbox" class="custom-control-input" id="enabled" checked>
+										<label class="custom-control-label" for="enabled" style="vertical-align: middle;">Enabled</label>
+									</div>
+									</div>
+								</div>
+								</div>
+								<!-- Default input -->
+								<div class="form-group col-md-4">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Create</div>
+									</div>
+									<input type="date" class="form-control py-0" id="creationDate" placeholder="" value="" readonly="readonly">
+								</div>
+								</div>
+								<!-- Default input -->
+								<div class="form-group col-md-4">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Expire</div>
+									</div>
+									<input type="date" class="form-control py-0" id="expireDate" placeholder="" value="">
+								</div>
+								</div>
+								
+							</div>
+							
+							<!-- Grid row -->
+							<div class="form-row">
+								<div class="form-group col-md-6" style="padding-left: 10px; padding-right: 10px;">
+									<div class="form-row">
+										<div class="form-group col-md-12 card p-1 mb-2 bg-light d-inline"><b>Ruoli</b><i class="bi bi-x-square-fill text-primary" onclick="resetCheckboxGroup('ruoli');" style="cursor: pointer; margin-left: 20px;" title="reset ruoli"></i></div>
+									</div>
+									<div class="form-row">
+										<div class="card card-body col-md-12 scroll-list" style="padding-left: 15px; padding-top: 5px; padding-bottom: 5px;" id="checkRuoli"></div>
+									</div>
+								</div>
+								<div class="form-group col-md-6" style="padding-left: 10px; padding-right: 10px;">
+									<div class="form-row">
+										<div class="form-group col-md-12 card p-1 mb-2 bg-light d-inline"><b>Permessi</b><i class="bi bi-x-square-fill text-primary" onclick="resetCheckboxGroup('permessi');" style="cursor: pointer; margin-left: 20px;" title="reset permessi"></i></div>
+									</div>
+									<div class="form-row">
+										<div class="card card-body col-md-12 scroll-list" style="padding-left: 15px; padding-top: 5px; padding-bottom: 5px;" id="checkPermessi"></div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Grid row bottoniera -->
+							<div class="form-row">
+								<div class="form-group col-md-5"></div>
+								<div class="form-group col-md-2 text-center">
+									<button class="btn btn-primary btn-rounded btn-sm" onclick="saveUser();">Salva</button>
+								</div>
+								<div class="form-group col-md-5 text-right">
+									<button class="btn btn-light text-danger btn-rounded btn-sm border border-danger" onclick="deleteUser();" id="button-delete-user">Elimina utente</button>
+								</div>
+							</div>
+							<input type="hidden" id="userId" value="">
+							
+							<!-- Extended default form grid -->
+
+						</div>
+					</div>
+
+					
+					<div class="card card-body text-center p-0 mt-5 shadow" id="dati-anagrafici">
+						<div class="card-body text-center" style="padding: 0px;">
+							<h6 class='card-header'><b>Dati anagrafici utente</b></h6> <!-- <i class="bi bi-x-square-fill text-danger" onclick="deleteDatiAnagrafici();" style="cursor: pointer; margin-left: 20px;" title="reset permessi"></i> -->
+						</div>
+						<div class="card-body text-center">
+							
+							<!-- Extended default form grid -->
+							
+							<!-- Grid row -->
+							<div class="form-row">
+								
+								<!-- Default input -->
+								<div class="form-group col-md-4">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Nome</div>
+									</div>
+									<input type="text" class="form-control py-0" id="nome" placeholder="">
+								</div>
+								</div>
+								
+								<!-- Default input -->
+								<div class="form-group col-md-4">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Cognome</div>
+									</div>
+									<input type="text" class="form-control py-0" id="cognome" placeholder="">
+								</div>
+								</div>
+								
+								<!-- Default input -->
+								<div class="form-group col-md-4">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Data di nascita</div>
+									</div>
+									<input type="date" class="form-control py-0" id="data-nascita" placeholder="" value="">
+								</div>
+								</div>
+								
+							</div>
+							<!-- Grid row -->
+							
+							<!-- Grid row -->
+							<div class="form-row">
+								
+								<!-- Default input -->
+								<div class="form-group col-md-4">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Codice Fiscale</div>
+									</div>
+									<input type="text" class="form-control py-0" id="codice-fiscale" placeholder="">
+								</div>
+								</div>
+								
+								<!-- Default input -->
+								<div class="form-group col-md-8">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Indirizzo</div>
+									</div>
+									<input type="text" class="form-control py-0" id="indirizzo" placeholder="" value="">
+								</div>
+								</div>
+								
+							</div>
+							
+							<!-- Grid row -->
+							<div class="form-row">
+								
+								<!-- Default input -->
+								<div class="form-group col-md-6">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Email</div>
+									</div>
+									<input type="text" class="form-control py-0" id="email" placeholder="">
+								</div>
+								</div>
+								
+								<!-- Default input -->
+								<div class="form-group col-md-6">
+								<!-- Default input -->
+								<div class="input-group mb-2">
+									<div class="input-group-prepend">
+									<div class="input-group-text">Telefono</div>
+									</div>
+									<input type="text" class="form-control py-0" id="telefono" placeholder="" value="">
+								</div>
+								</div>
+								
+							</div>
+							
+							<!-- Grid row bottoniera -->
+							<div class="form-row">
+								<div class="form-group col-md-5"></div>
+								<div class="form-group col-md-2 text-center">
+									<button class="btn btn-primary btn-rounded btn-sm" onclick="return saveDatiAnagrafici();">Salva</button>
+								</div>
+								<div class="form-group col-md-5 text-right">
+									<button id="elimina-dati-anagrafici" class="btn btn-light text-danger btn-rounded btn-sm border border-danger" onclick="return deleteDatiAnagrafici();" style="display: none;">Elimina dati</button>
+								</div>
+							</div>
+							<input type="hidden" id="id-anagrafica" value="">
+							<!-- Extended default form grid -->
+
+						</div>
+					</div>
+
+				</div>
+			</div>
+
+			<!-- Bottoniera -->
+			<div class="form-row">
+				<div class="form-group col-md-12 pl-5 pr-5 pb-3">
+					<div class="card-body text-left p-0 pt-4">
+						<div class="p-0">
+							<a class="btn btn-light text-primary btn-rounded btn-sm border border-primary" th:href="@{/users}">Indietro</a><br>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div th:replace="~{fragments/componenti :: auth-footer}"></div>
+	</div>
+	
+	<!-- The Modal -->
+	<div th:replace="~{fragments/componenti :: modal-window}"></div>
+  
+</body>
+</html>

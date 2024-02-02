@@ -1,0 +1,324 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head> 
+    <title>Springboot Authentication</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    
+    <script src="/springboot-authentication/webjars/jquery/3.6.4/jquery.min.js"></script>
+	<link href="/springboot-authentication/webjars/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/springboot-authentication/webjars/bootstrap/4.6.2/js/bootstrap.min.js"></script>
+        
+    <link href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <link href="/springboot-authentication/css/authentication-application.css" rel="stylesheet">
+    <!-- link th:href="@{/css/application.css}" rel="stylesheet" /-->
+    <script src="/springboot-authentication/js/authentication-application.js"></script>
+    <!--<script src="/springboot-authentication/js/moment.js"></script>-->
+
+	<link rel="icon" type="image/x-icon" href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/icons/shield-lock.svg">
+	<script>
+	$(document).ready(function() {
+		//getLoggedUsers();
+		getLoggedUsersInfo();
+	});
+
+	function getLoggedUsers()
+	{
+		var endpoint = baseURL + "/login/get-logged-users";
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+		        console.log(responseData);
+				var dati = JSON.stringify(responseData);
+				mostraCheckUtenti(dati);
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('I','modalPopup','Errore nel recupero degli utenti loggati',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function getLoggedUsersInfo()
+	{
+		var endpoint = baseURL + "/login/get-logged-users-info";
+		$.ajax({
+		    url: endpoint,
+		    type: 'GET',
+		    success: function(responseData, status, xhr){
+		        console.log(responseData);
+				var dati = JSON.stringify(responseData);
+				mostraCheckUtentiInfo(dati);
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('I','modalPopup','Errore nel recupero degli utenti loggati',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function forceLogout(utente)
+	{
+		var endpoint = baseURL + "/login/force-user-logout/"+utente;
+		$.ajax({
+		    url: endpoint,
+		    type: 'POST',
+		    success: function(responseData, status, xhr){
+		        //console.log(responseData);
+				if(utente == currentLoggedUser) {
+					window.location.href = "@{/logout}";
+				} else {
+					openModal('S','modalPopup','Logout effettuato',true,false,false,true,null,null,null);
+					//getLoggedUsers();
+					getLoggedUsersInfo();
+				}
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('I','modalPopup','Errore logout utente',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function forceAllLogout()
+	{
+		var endpoint = baseURL + "/login/force-all-logout";
+		$.ajax({
+		    url: endpoint,
+		    type: 'POST',
+		    success: function(responseData, status, xhr){
+		        console.log(responseData);
+				window.location.href = "@{/logout}";
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		        //console.log(errorMessage);
+		        openModal('I','modalPopup','Errore logout utente',true,false,false,true,null,null,null);
+		    }
+		});
+	}
+
+	function selectAll(select) {
+		$("input:checkbox[name=utenti]").each(function(){
+			$(this).prop("checked", select);
+		});
+	}
+
+	function forceLogoutSelected() {
+		var utentiSelezionati = [];
+		var logout = false;
+
+		$("input:checkbox[name=utenti]:checked").each(function(){
+			utentiSelezionati.push($(this).val());
+			if($(this).val() == currentLoggedUser) {
+				logout = true;
+			}
+		});
+		
+		if(utentiSelezionati.length > 0) {
+			var endpoint = baseURL + "/login/force-multi-user-logout";
+			$.ajax({
+				url: endpoint,
+				type: 'POST',
+//				dataType: 'json',
+				contentType: "application/json",
+				data: JSON.stringify(utentiSelezionati),
+				success: function(responseData, status, xhr) {
+					//console.log(responseData);
+					if(logout){
+						window.location.href = "@{/logout}";
+					} else {
+						openModal('S','modalPopup','Logout effettuato',true,false,false,true,null,null,null);
+						//getLoggedUsers();
+						getLoggedUsersInfo();
+					}
+				},
+				error: function (jqXhr, textStatus, errorMessage) {
+					//console.log(errorMessage);
+					openModal('E','modalPopup','Errore logout utenti '+jqXhr.status+' '+textStatus,true,false,false,true,null,null,null);
+				}
+			});
+		} else {
+			openModal('W','modalPopup','Selezionare almeno un utente',true,false,false,true,null,null,null);
+		}
+	}
+
+	function mostraCheckUtenti(dati) 
+    {
+    	var utenti = JSON.parse(dati);
+		//sortByKey(utenti, "id", true);
+		utenti.sort();
+    	var divUtenti = document.getElementById("loggedUsers");
+		if(divUtenti.childNodes.length>0){
+			divUtenti.innerHTML = '';
+		}
+		
+    	for (let i in utenti) 
+		{
+    		divRow = document.createElement("div");
+			divRow.setAttribute("class", "form-row");
+
+			divRowSeparator = document.createElement("div");
+			divRowSeparator.setAttribute("class", "form-row");
+			divRowSeparator.setAttribute("style", "height: 5px;");
+			
+			divCheck = document.createElement("div");
+			divCheck.setAttribute("class", "custom-control custom-checkbox col-md-11 rounded bg-light"); //bg-light 
+			divCheck.setAttribute("style", "text-align: left; padding-left: 30px; border-bottom: solid 1px #e0e0e0;");
+			
+			inputCheck = document.createElement('input');
+			inputCheck.setAttribute("type", "checkbox");
+			inputCheck.setAttribute("class", "custom-control-input");
+			inputCheck.setAttribute("id", utenti[i]);
+			inputCheck.setAttribute("name", "utenti");
+			inputCheck.setAttribute("value", utenti[i]);
+			
+			labelCheck = document.createElement('label');
+			labelCheck.setAttribute("class", "custom-control-label");
+			labelCheck.setAttribute("for", utenti[i]);
+			labelCheck.setAttribute("style", "vertical-align: middle;");
+			labelCheck.innerHTML = utenti[i];
+
+			divLogout = document.createElement("div");
+			divLogout.setAttribute("class", "col-md-1");
+			divLogout.setAttribute("style", "margin-top: 5px;");
+			
+			divLogout.innerHTML = "<div class='text-primary d-inline' style='cursor: pointer' onclick='forceLogout(\""+utenti[i]+"\")'><span class='bi bi-box-arrow-right' style='font-size: large' title='force logout'></span></div>"; //<span class='bi bi-bootstrap-reboot'></span>
+			//divLogout.setAttribute("style", "text-align: left; padding-left: 25px;");
+			//"<div class='badge badge-warning d-inline' style='cursor: pointer' onclick='passwordReset(\"" + username + "\");'><span class='bi bi-bootstrap-reboot'></span></div>";
+			
+			divUtenti.appendChild(divRowSeparator);
+			divUtenti.appendChild(divRow);
+			divRow.appendChild(divCheck);
+			divRow.appendChild(divLogout);
+			divCheck.appendChild(inputCheck);
+			divCheck.appendChild(labelCheck);
+			
+		}
+    }
+
+	function mostraCheckUtentiInfo(dati) 
+    {
+    	var utenti = JSON.parse(dati);
+		//sortByKey(utenti, "username", true);
+		sortByKey(utenti, "accessDate", false);
+		//utenti.sort();
+    	var divUtenti = document.getElementById("loggedUsers");
+		if(divUtenti.childNodes.length>0){
+			divUtenti.innerHTML = '';
+		}
+		
+    	for (let i in utenti) 
+		{
+    		divRow = document.createElement("div");
+			divRow.setAttribute("class", "form-row");
+
+			divRowSeparator = document.createElement("div");
+			divRowSeparator.setAttribute("class", "form-row");
+			divRowSeparator.setAttribute("style", "height: 6px;");
+			
+			divCheck = document.createElement("div");
+			divCheck.setAttribute("class", "custom-control custom-checkbox col-md-11 rounded bg-light"); //bg-light 
+			divCheck.setAttribute("style", "text-align: left; padding-left: 30px; border-bottom: solid 1px #e0e0e0; border-left: solid 1px #e0e0e0;");
+			
+			inputCheck = document.createElement('input');
+			inputCheck.setAttribute("type", "checkbox");
+			inputCheck.setAttribute("class", "custom-control-input");
+			inputCheck.setAttribute("id", utenti[i].username);
+			inputCheck.setAttribute("name", "utenti");
+			inputCheck.setAttribute("value", utenti[i].username);
+			
+			labelCheck = document.createElement('label');
+			labelCheck.setAttribute("class", "custom-control-label");
+			labelCheck.setAttribute("for", utenti[i].username);
+			labelCheck.setAttribute("style", "vertical-align: middle;");
+			labelCheck.innerHTML = utenti[i].username;
+
+			timeCheck = document.createElement('div');
+			timeCheck.setAttribute("style", "vertical-align: middle; width: 100%; position: absolute; text-align: right; padding-right: 38px; margin-top: -24px;");
+			timeCheck.innerHTML = formatDate(utenti[i].accessDate);
+
+			divLogout = document.createElement("div");
+			divLogout.setAttribute("class", "col-md-1");
+			divLogout.setAttribute("style", "margin-top: 5px;");
+			
+			divLogout.innerHTML = "<div class='text-danger d-inline' style='cursor: pointer' onclick='forceLogout(\""+utenti[i].username+"\")'><span class='bi bi-box-arrow-right' style='font-size: large' title='logout'></span></div>"; //<span class='bi bi-bootstrap-reboot'></span>
+			//divLogout.setAttribute("style", "text-align: left; padding-left: 25px;");
+			//"<div class='badge badge-warning d-inline' style='cursor: pointer' onclick='passwordReset(\"" + username + "\");'><span class='bi bi-bootstrap-reboot'></span></div>";
+			
+			divUtenti.appendChild(divRowSeparator);
+			divUtenti.appendChild(divRow);
+			divRow.appendChild(divCheck);
+			divRow.appendChild(divLogout);
+			divCheck.appendChild(inputCheck);
+			divCheck.appendChild(labelCheck);
+			divCheck.appendChild(timeCheck);
+			
+		}
+    }
+
+    </script>
+
+</head>
+<body>
+	<div style="margin-left: 20px; margin-right: 20px;">
+		<div th:replace="~{fragments/componenti :: header-user}"></div>
+		
+		<div class="card card-nav-tabs">
+			<div class="card-header card-header-warning card-header-icon">
+				<h3><i class="bi bi-door-open"></i>&nbsp;&nbsp;Gestione Accessi</h3>
+			</div>
+			<div class="card-body text-center"></div>
+			<div class="form-row">
+				<div class="form-group col-md-12 pl-5 pr-5">
+					<div class="card card-body text-center p-0 shadow">
+						<h6 class='card-header'><b>Utenti attivi</b><i class="bi bi-arrow-clockwise bg-warning text-dark rounded" onclick="getLoggedUsersInfo();" style="cursor: pointer; margin-left: 20px; font-size: 15px; padding-left: 3px; padding-right: 3px;" title="aggiorna elenco"></i></h6>
+						<div class="form-row card-body text-center pb-0">
+							<div class="form-group col-md-12" style="padding: 10px;">
+								<div class="form-row">
+									<div class="card card-header form-group col-md-12 d-inline p-1">
+										<div class="form-row">
+											<div class="card-body col-md-6 d-inline text-left p-0 m-0 pl-5"><b>Utente</b></div>
+											<!-- div class="card-body col-md-10 d-inline"></div -->
+											<div class="card-body col-md-5 d-inline text-right p-0 m-0 pr-3"><b>Istante di accesso</b></div>
+											<div class="card-body col-md-1 d-inline text-center p-0 m-0"></div>
+										</div>
+									</div>
+								</div>
+								<div class="form-row" style="height: 5px;"></div>
+								<div class="form-row">
+									<div class="card card-body col-md-12 scroll-list d-inline pl-3 pt-1 pb-5" style="height: 350px;" id="loggedUsers"></div>
+								</div>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-group col-md-2">
+								<button class="btn btn-light btn-rounded btn-sm text-primary border border-primary" onclick="selectAll(true);">Select all</button>
+							</div>
+							<div class="form-group col-md-2">
+								<button class="btn btn-light btn-rounded btn-sm text-primary border border-primary" onclick="selectAll(false);">Unselect all</button>
+							</div>
+							<div class="form-group col-md-4">
+							</div>
+							<div class="form-group col-md-2">
+								<button class="btn btn-light btn-rounded btn-sm text-danger border border-danger" onclick="forceLogoutSelected();">Logout selected</button>
+							</div>
+							<div class="form-group col-md-2">
+								<button class="btn btn-danger btn-rounded btn-sm" onclick="forceAllLogout();">Logout all</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div th:replace="~{fragments/componenti :: navbar}"></div>
+		</div>
+		
+		<div th:replace="~{fragments/componenti :: auth-footer}"></div>
+	</div>
+
+	<!-- https://icons.getbootstrap.com/ -->
+	<div th:replace="~{fragments/componenti :: modal-window}"></div>
+</body>
+</html>

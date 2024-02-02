@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <title>Springboot Authentication</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <script src="/springboot-authentication/webjars/jquery/3.6.4/jquery.min.js"></script>
+    <link href="/springboot-authentication/webjars/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/springboot-authentication/webjars/bootstrap/4.6.2/js/bootstrap.min.js"></script>
+    
+    <link href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <link href="/springboot-authentication/css/authentication-application.css" rel="stylesheet">
+    <!-- link th:href="@{/css/application.css}" rel="stylesheet" /-->
+    <script src="/springboot-authentication/js/authentication-application.js"></script>
+    <!--<script src="/springboot-authentication/js/moment.js"></script>-->
+
+    <link rel="icon" type="image/x-icon" href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/icons/shield-lock.svg">
+    <script>
+        $(document).ready(function() {
+            
+        });
+
+
+        function checkObbligatori() {
+            var username = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
+            var confPassword = document.getElementById("conf-password").value;
+            if(username==null || username=="" || password==null || password=="" || confPassword==null || confPassword==""){
+                return false
+            }
+            return true;
+        }
+
+        function saveUser() 
+        {
+            if(!checkObbligatori()) {
+                openModal('W','modalPopup','Tutti i campi sono obbligatori',true,false,false,true,null,null,null);
+                return false;
+            }
+
+            var username = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
+            var confPassword = document.getElementById("conf-password").value;
+
+            if(password != confPassword) {
+                openModal('W','modalPopup','Password non corrispondenti',true,false,false,true,null,null,null);
+                return false;
+            }
+
+            var endpoint = baseURL + "/utente/register";
+	 		var jEntity = {
+	 				username: username,
+	 				password: password
+	 		};
+			$.ajax({
+			    url: endpoint,
+			    type: 'POST',
+			    dataType: 'json',
+			    contentType: "application/json",
+			    data: JSON.stringify(jEntity),
+			    success: function(responseData, status, xhr){
+//			        console.log(responseData);
+//					var dati = JSON.parse(JSON.stringify(responseData));
+                    openModal('S','modalPopup','Utente registrato correttamente',true,false,false,true,null,null,null);
+					svuotaForm();
+			    },
+			    error: function (jqXhr, textStatus, errorMessage) {
+//			        console.log(errorMessage);
+                    if(jqXhr.status=="406") {
+                        openModal('E','modalPopup','Utente esistente',true,false,false,true,null,null,null);
+                    } else {
+                        openModal('E','modalPopup','Errore in fase di registrazione',true,false,false,true,null,null,null);
+                    }
+			    }
+			});
+        }
+    
+        function svuotaForm() {
+            document.getElementById("username").value = "";
+            document.getElementById("password").value = "";
+            document.getElementById("view-password").value = "";
+            document.getElementById("conf-password").value = "";
+            document.getElementById("conf-view-password").value = "";
+        }
+    </script>
+</head>
+<body>
+    <div style="margin-left: 20px; margin-right: 20px;">
+		<div id="headerDiv" class="card card-header" style="padding-top: 0px; padding-bottom: 0px;">
+			<div class='form-row' style='padding: 0px;'>
+				<div id="currentUserDiv" class="col-md-11" style='padding: 0px; margin: 0px;'>&nbsp;</div>
+				<a id="logoutDiv" class="card-body form-group col-md-1 bi bi-box-arrow-in-right text-dark" th:href="@{/login}" style='text-align: right; padding: 0px; margin: 0px; cursor: pointer; text-decoration: none;'>
+                    <div class='d-inline' style='font-size: small; font-weight: bold;'>Accedi</div>
+                </a>
+			</div>
+		</div>
+
+		<div class="card card-nav-tabs">
+			<div class="card-header card-header-warning card-header-icon">
+				<h3><i class="bi bi-person-add"></i>&nbsp;&nbsp;Registrazione</h3>
+			</div>
+
+			<div class="card-body form-group col-md-5" style="align-self: center;">
+				<div class="card-body text-center"></div>
+
+                <div class="card card-body text-center p-0 shadow">
+                    
+                    <div class="card-header text-center"><h5>Registrazione nuovo utente</h5></div>
+                    <div class="card-body text-center"></div>
+
+                    <div class="form-group col-md-12">
+                        <div class="input-group mb-0" style="padding-left: 5%; padding-right: 5%;">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text" style="width: 100px;">Username</div>
+                            </div>
+                            <input type="text" class="form-control py-0" id="username" name="username" placeholder="">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group col-md-12">
+                        <div class="input-group mb-0" style="padding-left: 5%; padding-right: 5%;">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text" style="width: 100px;">Password</div>
+                            </div>
+                            <input type="password" class="form-control py-0" id="password" name="password" placeholder="">
+                            <input type="text" class="form-control py-0" id="view-password" style="display: none;">
+						    <div class="input-group-append">
+                                <span class="input-group-text">
+                                    <i id="switch-pass" class="bi bi-eye-fill text-secondary" onclick="showHidePassword('view-password','password','switch-pass');" style="cursor: pointer;"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12">
+                        <div class="input-group mb-0" style="padding-left: 5%; padding-right: 5%;">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text" style="width: 100px;">Conferma</div>
+                            </div>
+                            <input type="password" class="form-control py-0" id="conf-password" name="conf-password" placeholder="">
+                            <input type="text" class="form-control py-0" id="conf-view-password" style="display: none;">
+						    <div class="input-group-append">
+                                <span class="input-group-text">
+                                    <i id="conf-switch-pass" class="bi bi-eye-fill text-secondary" onclick="showHidePassword('conf-view-password','conf-password','conf-switch-pass');" style="cursor: pointer;"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body text-center">
+                        <button class="btn btn-primary btn-rounded btn-sm" onclick="return saveUser();">Registrati</button>
+                    </div>
+                </div>
+			</div>
+
+            <!--div class="card-body" style="text-align: left;">
+				<a class="btn btn-primary btn-rounded btn-sm" th:href="@{/login}">Login</a>
+			</div-->
+		</div>
+        
+		<div th:replace="~{fragments/componenti :: auth-footer}"></div>
+	</div>
+
+    <!-- The Modal -->
+	<div th:replace="~{fragments/componenti :: modal-window}"></div>
+
+</body>
+</html>

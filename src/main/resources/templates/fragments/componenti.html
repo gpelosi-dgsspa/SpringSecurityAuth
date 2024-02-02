@@ -1,0 +1,156 @@
+<!-- Header -->
+<div th:fragment="header-user" id="headerDiv" class="card card-header pt-0 pb-0 border-bottom-0">
+	<script>
+	$(document).ready(function() {
+		getCurrentUser();
+	});
+	</script>
+    <div class='form-row'>
+        <div id="currentUserDiv" style='padding: 0px; margin: 0px;'></div>
+        <a sec:authorize="isAuthenticated()" id="logoutDiv" th:href="@{/logout}" style='text-align: right; padding: 0px; margin: 0px; cursor: pointer; text-decoration: none;'></a>
+        <a sec:authorize="!isAuthenticated()" id="loginDiv" th:href="@{/login}" style='text-align: right; padding: 0px; margin: 0px; cursor: pointer; text-decoration: none;'></a>
+    </div>
+</div>
+<!-- span sec:authentication="name"></span -->
+<!-- span sec:authentication="principal.authorities"></span -->
+<!-- END Header -->
+
+<!-- Navigation Items -->
+<div th:fragment="navbar" class="card-body">
+	<script>
+		//nasconde la voce di menu "Gerarchie applicative" quando vengono acquisite da file di properties
+		function nascondiMenuGerarchie() 
+		{
+			var gerarchieSpace = document.getElementById("gerarchie-space");
+			var gerarchieDiv = document.getElementById("gerarchie-div");
+			gerarchieSpace.style.display = 'none';
+			gerarchieDiv.style.display = 'none';
+		}
+		
+		checkHierarchySource(null, nascondiMenuGerarchie);
+	</script>
+	
+	<style>
+		.menu-item {
+			height: 23px;
+		}
+		.menu-item:hover {
+			box-shadow: 2px 2px 5px rgb(173, 173, 173);
+			border: solid 1px rgb(0, 111, 191);
+		}
+		.menu-item:link {
+			text-decoration: none;
+		}
+	</style>
+	
+    <div class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/index}" class="bi bi-grid mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Index&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="hasAuthority('READ')" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="hasAuthority('READ')" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/subtemplates/subindex}" class="bi bi-grid mb-0 bg-light form-control-sm d-inline pt-0 pl-4 menu-item">&nbsp;Sub-Index&nbsp;</a>
+        </div>
+    </div>
+    <div class="form-row" style="height: 2px;"></div>
+    <div class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/home}" class="bi bi-house mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Home&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="hasAuthority('READ')" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="hasAuthority('READ')" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/subtemplates/subhome}" class="bi bi-house mb-0 bg-light form-control-sm d-inline pt-0 pl-4 menu-item">&nbsp;Sub-Home&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="isAuthenticated()" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="isAuthenticated()" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/welcome}" class="bi bi-check2-square mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Welcome&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="hasRole('ADMINISTRATOR')" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="hasRole('ADMINISTRATOR')" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/users}" class="bi bi-person-gear mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Utenti applicativi&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="hasRole('ADMINISTRATOR')" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="hasRole('ADMINISTRATOR')" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/ruoli_permessi}" class="bi bi-file-ruled mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Ruoli/Profili applicativi&nbsp;</a>
+        </div>
+    </div>
+    <div id="gerarchie-space" sec:authorize="hasRole('ADMINISTRATOR')" class="form-row" style="height: 2px;"></div>
+    <div id="gerarchie-div" sec:authorize="hasRole('ADMINISTRATOR')" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/gerarchie}" class="bi bi-diagram-3 mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Gerarchie applicative&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="hasRole('ADMINISTRATOR')" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="hasRole('ADMINISTRATOR')" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/logged_users}" class="bi bi-door-open mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Accessi&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="isAuthenticated()" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="isAuthenticated()" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/change_password}" class="bi bi-key mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Cambio password&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="hasRole('SUPER_USER')" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="hasRole('SUPER_USER')" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/upload}" class="bi bi-cloud-arrow-up mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Upload&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="!isAuthenticated()" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="!isAuthenticated()" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/login}" class="bi bi-box-arrow-in-right mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Login&nbsp;</a>
+        </div>
+    </div>
+    <div sec:authorize="isAuthenticated()" class="form-row" style="height: 2px;"></div>
+    <div sec:authorize="isAuthenticated()" class="form-row">
+        <div class="form-group col-md-2 card card-body m-0 p-0 shadow-sm">
+            <a th:href="@{/logout}" class="bi bi-box-arrow-right mb-0 bg-light form-control-sm d-inline pt-0 pl-1 menu-item">&nbsp;Logout&nbsp;</a>
+        </div>
+    </div>
+</div>
+<!-- END Navigation Items -->
+
+<!-- The Modal -->
+<div th:fragment="modal-window" id="modalPopup" class="modal">
+    <!-- Modal content -->
+    <div class="modal-content">
+        <div class="card-header">
+            <span id="modal-title-group" class=""><i id="modal-icon" class=""></i>&nbsp;&nbsp;</span> 
+            <b id="modal-title" class=""></b>
+            <span id="closeModal" class="close"><i class="bi bi-x-square-fill"></i></span>
+        </div>
+        <div class="card-body"></div>
+        <p id="testoModale" style="text-align: center;"></p>
+        <div id="pan-buttons" class="card-body" style="text-align: center; color: #ffffff;">
+            <a id="okModal" class="btn btn-primary btn-rounded btn-sm modal-button">&nbsp;&nbsp;&nbsp;Ok&nbsp;&nbsp;&nbsp;</a>
+            <a id="annullaModal" class="btn btn-light text-primary btn-rounded btn-sm modal-button border border-primary">Annulla</a>
+            <a id="chiudiModal" class="btn btn-primary btn-rounded btn-sm modal-button">Chiudi</a>
+        </div>
+    </div>
+    <link href="/springboot-authentication/css/modal.css" rel="stylesheet">
+    <script src="/springboot-authentication/js/modal.js"></script>
+</div>
+<!-- END Modal -->
+
+<!-- FOOTER -->
+<div th:fragment="auth-footer">
+    <div class="card card-footer pt-0 pb-0 border-top-0">
+        <div class="form-group-sm col-md-12 text-right pt-0 pb-0">
+            <span style="font-size: small;">Spring Boot Authentication Framework</span> <!--  text-shadow: 2px 2px 4px; -->
+        </div>
+    </div>
+</div>
+<!-- END FOOTER -->

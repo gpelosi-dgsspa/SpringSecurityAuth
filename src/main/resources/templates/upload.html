@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head> 
+    <title>Springboot Authentication</title> 
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    
+    <script src="/springboot-authentication/webjars/jquery/3.6.4/jquery.min.js"></script>
+	<link href="/springboot-authentication/webjars/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/springboot-authentication/webjars/bootstrap/4.6.2/js/bootstrap.min.js"></script>
+        
+	<link href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+
+	<link rel="icon" type="image/x-icon" href="/springboot-authentication/webjars/bootstrap-icons/1.11.2/icons/shield-lock.svg">
+	<script src="/springboot-authentication/js/authentication-application.js"></script>
+    <script>
+    $(document).ready(function() {
+	});
+
+	</script>
+</head>
+<body>
+    <div style="margin-left: 20px; margin-right: 20px;">
+		<div th:replace="~{fragments/componenti :: header-user}"></div>
+		
+		<div class="card card-nav-tabs">
+			<div class="card-header card-header-warning card-header-icon">
+				<h3><i class="bi bi-cloud-arrow-up"></i>&nbsp;&nbsp;Upload</h3>
+			</div>
+
+			<div class="card-body"></div>
+			<div class="form-row">
+				<div class="form-group col-md-2"></div>
+
+				<div class="form-group col-md-8">
+					<div class="card card-body p-0 shadow">
+						<h6 class="card-header text-center"><b>Upload</b></h6>
+						<div class="card-body">
+							<label class="form-label" for="fileInput">Selezionare il file da caricare</label>
+							<input type="file" id="fileInput" class="form-control" style="padding: 3px;" onchange="showFileSize();"/>
+						</div>
+						<div class="card-body text-center p-1 mb-0" id="fileDetails" style="font-size: 14px;">
+						</div>
+						<div class="card-body text-center">
+							<button class="btn btn-primary btn-rounded btn-sm" type="button" onclick="uploadFile('fileInput','fileDetails')">Carica</button>
+						</div>
+					</div>
+					
+					<!-- div class="container">
+						<div class="row">
+							<div class="col">
+								<h6>Image Preview:</h6>
+								<img class="img rounded" id="avatar"/>
+							</div>
+							<div class="col">
+								<h6>Base64 Output</h6>
+								<textarea id="textAreaExample" rows="30" cols="50"></textarea>
+							</div>
+						</div>
+					</div -->
+				
+				</div>
+				<div class="form-group col-md-2"></div>
+			</div>
+
+			<div th:replace="~{fragments/componenti :: navbar}"></div>
+		</div>
+		
+		<div th:replace="~{fragments/componenti :: auth-footer}"></div>
+	</div>
+
+	<script src="/springboot-authentication/js/upload.js"></script>
+
+	<!-- The Modal -->
+	<div th:replace="~{fragments/componenti :: modal-window}"></div>
+</body>
+</html>
